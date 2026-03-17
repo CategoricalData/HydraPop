@@ -26,3 +26,14 @@ java {
 test {
     useJUnitPlatform()
 }
+
+// Collects all runtime jars (excluding TinkerPop, which the Gremlin Console already provides)
+// into build/console-libs/ for use with the Gremlin Console.
+tasks.register('consoleLibs', Copy) {
+    into layout.buildDirectory.dir('console-libs')
+    from(configurations.runtimeClasspath) {
+        exclude 'gremlin-*'
+        exclude 'tinkergraph-*'
+    }
+    from(tasks.jar)
+}
