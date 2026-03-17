@@ -3,11 +3,20 @@ package net.fortytwo.hydra.hydrapop;
 import hydra.core.FloatValue;
 import hydra.core.IntegerValue;
 import hydra.core.Literal;
+import hydra.core.LiteralType;
+import hydra.dsl.LiteralTypes;
 import hydra.dsl.Literals;
 import hydra.pg.dsl.Graphs;
+import hydra.reflect.Reflect;
+import hydra.util.Maybe;
 import hydra.pg.model.Edge;
+import hydra.pg.model.EdgeLabel;
+import hydra.pg.model.EdgeType;
 import hydra.pg.model.Graph;
+import hydra.pg.model.GraphSchema;
 import hydra.pg.model.Vertex;
+import hydra.pg.model.VertexLabel;
+import hydra.pg.model.VertexType;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,6 +30,41 @@ import java.util.Map;
 class ExampleGraphs {
 
     private ExampleGraphs() {
+    }
+
+    /**
+     * Builds a GraphSchema for the TinkerPop "Modern" graph using the Hydra PG DSL.
+     *
+     * @see <a href="https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/tinkergraph/structure/TinkerFactory.html">TinkerFactory.createModern()</a>
+     */
+    static GraphSchema<LiteralType> buildModernGraphSchema() {
+        VertexType<LiteralType> personType = Graphs.<LiteralType>vertexType("person", LiteralTypes.int32())
+                .property("name", LiteralTypes.string(), true)
+                .property("age", LiteralTypes.int32(), false)
+                .build();
+
+        VertexType<LiteralType> softwareType = Graphs.<LiteralType>vertexType("software", LiteralTypes.int32())
+                .property("name", LiteralTypes.string(), true)
+                .property("lang", LiteralTypes.string(), true)
+                .build();
+
+        EdgeType<LiteralType> knowsType = Graphs.<LiteralType>edgeType("knows", LiteralTypes.int32(), "person", "person")
+                .property("weight", LiteralTypes.float64(), true)
+                .build();
+
+        EdgeType<LiteralType> createdType = Graphs.<LiteralType>edgeType("created", LiteralTypes.int32(), "person", "software")
+                .property("weight", LiteralTypes.float64(), true)
+                .build();
+
+        Map<VertexLabel, VertexType<LiteralType>> vertexTypes = new HashMap<>();
+        vertexTypes.put(personType.label, personType);
+        vertexTypes.put(softwareType.label, softwareType);
+
+        Map<EdgeLabel, EdgeType<LiteralType>> edgeTypes = new HashMap<>();
+        edgeTypes.put(knowsType.label, knowsType);
+        edgeTypes.put(createdType.label, createdType);
+
+        return new GraphSchema<>(vertexTypes, edgeTypes);
     }
 
     /**
@@ -152,5 +196,28 @@ class ExampleGraphs {
             return Literals.float64((Double) obj);
         }
         throw new UnsupportedOperationException("Unsupported object type: " + obj.getClass());
+    }
+
+    /**
+     * Checks whether a Literal value matches a LiteralType, returning an error message if not.
+     * This is the {@code checkValue} parameter for {@code Validation.validateGraph}.
+     */
+    static java.util.function.Function<Literal, Maybe<String>> checkLiteral(LiteralType type) {
+        return value -> {
+            LiteralType actual = Reflect.literalType(value);
+            if (type.equals(actual)) {
+                return Maybe.nothing();
+            }
+            return Maybe.just("expected " + LiteralTypes.showLiteralType(type)
+                    + ", got " + LiteralTypes.showLiteralType(actual));
+        };
+    }
+
+    /**
+     * Displays a Literal value as a human-readable string.
+     * This is the {@code showValue} parameter for {@code Validation.validateGraph}.
+     */
+    static String showLiteral(Literal lit) {
+        return Literals.showLiteral(lit);
     }
 }
