@@ -94,15 +94,16 @@ gremlin> checkLiteral = { type -> { value ->
          } as java.util.function.Function } as java.util.function.Function
 gremlin> showLiteral = { lit -> Literals.showLiteral(lit) } as java.util.function.Function
 
+// Helper to display validation results
+gremlin> validate = { g -> def h = HydraGremlinBridge.gremlinToHydra(g, objectToLiteral); def r = Validation.validateGraph(checkLiteral, showLiteral, schema, h); r.isJust() ? "INVALID - " + r.fromJust() : "VALID" }
+
 // Load the Modern graph and validate -- should pass
 gremlin> graph = TinkerFactory.createModern()
-gremlin> hydraGraph = HydraGremlinBridge.gremlinToHydra(graph, objectToLiteral)
-gremlin> Validation.validateGraph(checkLiteral, showLiteral, schema, hydraGraph)
-==>Nothing
+gremlin> validate(graph)
+==>VALID
 
 // Now break it: remove a required property
 gremlin> graph.vertices(1).next().property("name").remove()
-gremlin> hydraGraph = HydraGremlinBridge.gremlinToHydra(graph, objectToLiteral)
-gremlin> Validation.validateGraph(checkLiteral, showLiteral, schema, hydraGraph)
-==>Just "Invalid vertex with id integer:int32:1: Invalid property: Missing value for: name"
+gremlin> validate(graph)
+==>INVALID - Invalid vertex with id integer:int32:1: Invalid property: Missing value for : name
 ```
