@@ -7,12 +7,12 @@ and also compiled to multiple languages.
 This repository currently deals with TinkerPop's Java API, but Hydra also has heads (complete implementations) in
 Python and Haskell, with others on the way.
 Hydra is being explored as a means for providing validation logic and other functionality in a way that is accessible
-to each Gremlin language variant, and guaranteed to be consistent across all of them.
+to each [Gremlin language variant](https://tinkerpop.apache.org/docs/current/reference/#gremlin-drivers), and guaranteed to be consistent across all of them.
 
 ## Validation
 
-HydraPop can validate a TinkerPop graph against a Hydra `GraphSchema` using Hydra's built-in support for property graph
-validation.
+HydraPop can validate a TinkerPop graph against a Hydra `GraphSchema` using Hydra's built-in support for
+[property graph validation](https://github.com/CategoricalData/hydra/tree/main/hydra-ext/demos/validatepg).
 The workflow is:
 
 1. Define a schema using the Hydra PG DSL (`hydra.pg.dsl`)
