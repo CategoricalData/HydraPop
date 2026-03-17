@@ -1,0 +1,28 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'net.fortytwo.hydra'
+version = '0.1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'net.fortytwo.hydra:hydra-ext:0.13.0'
+    api 'org.apache.tinkerpop:gremlin-core:3.8.0'
+
+    testImplementation platform('org.junit:junit-bom:5.9.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.apache.tinkerpop:tinkergraph-gremlin:3.8.0'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+test {
+    useJUnitPlatform()
+}
