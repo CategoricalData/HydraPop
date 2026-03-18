@@ -37,3 +37,11 @@ tasks.register('consoleLibs', Copy) {
     }
     from(tasks.jar)
 }
+
+// Generates JSON data files from the example graphs and schema defined in Java.
+// Output: src/gen-main/json/*.json
+tasks.register('generateExampleData', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'net.fortytwo.hydra.hydrapop.GenerateExampleData'
+    args = ['src/gen-main/json']
+}
