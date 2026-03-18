@@ -62,7 +62,6 @@ convention = "numpy"
 typeCheckingMode = "strict"
 extraPaths = [
     "src/main/python",
-    "../hydra/hydra-ext/src/main/python",
     "../hydra/hydra-ext/src/gen-main/python",
 ]
 
@@ -70,7 +69,6 @@ extraPaths = [
 pythonpath = [
     "src/main/python",
     "src/test/python",
-    "../hydra/hydra-ext/src/main/python",
     "../hydra/hydra-ext/src/gen-main/python",
 ]
 testpaths = [
