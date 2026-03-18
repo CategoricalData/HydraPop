@@ -4,3 +4,9 @@ build/
 
 .claude/
 .idea/
+
+.pixi/
+.venv/
+pixi.lock
+*.egg-info/
+__pycache__/
