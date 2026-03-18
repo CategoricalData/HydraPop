@@ -24,24 +24,17 @@ public class HydraGremlinBridge {
 
     /**
      * Populates a TinkerPop graph from a Hydra property graph.
-     *
-     * @param <V>            the Hydra value type for ids and properties
-     * @param hydraGraph     the source Hydra graph
-     * @param gremlinGraph   the target TinkerPop graph (must be empty or accept new elements)
-     * @param valueToObject  converts a Hydra value to a TinkerPop-compatible Object
      */
     public static <V> void hydraToGremlin(
             Graph<V> hydraGraph,
             org.apache.tinkerpop.gremlin.structure.Graph gremlinGraph,
             Function<V, Object> valueToObject) {
 
-        // Add vertices
         for (Map.Entry<V, Vertex<V>> entry : hydraGraph.vertices.entrySet()) {
             Vertex<V> hv = entry.getValue();
             Object id = valueToObject.apply(hv.id);
             String label = hv.label.value;
 
-            // Build key-value array: T.id, id, T.label, label, key1, val1, key2, val2, ...
             Object[] keyValues = new Object[4 + hv.properties.size() * 2];
             keyValues[0] = T.id;
             keyValues[1] = id;
@@ -56,7 +49,6 @@ public class HydraGremlinBridge {
             gremlinGraph.addVertex(keyValues);
         }
 
-        // Add edges
         for (Map.Entry<V, Edge<V>> entry : hydraGraph.edges.entrySet()) {
             Edge<V> he = entry.getValue();
             Object id = valueToObject.apply(he.id);
@@ -67,7 +59,6 @@ public class HydraGremlinBridge {
             org.apache.tinkerpop.gremlin.structure.Vertex outVertex = findVertex(gremlinGraph, outId);
             org.apache.tinkerpop.gremlin.structure.Vertex inVertex = findVertex(gremlinGraph, inId);
 
-            // Build key-value array: T.id, id, key1, val1, key2, val2, ...
             Object[] keyValues = new Object[2 + he.properties.size() * 2];
             keyValues[0] = T.id;
             keyValues[1] = id;
@@ -83,11 +74,6 @@ public class HydraGremlinBridge {
 
     /**
      * Reads a TinkerPop graph into a Hydra property graph.
-     *
-     * @param <V>            the Hydra value type for ids and properties
-     * @param gremlinGraph   the source TinkerPop graph
-     * @param objectToValue  converts a TinkerPop Object to a Hydra value
-     * @return a Hydra property graph
      */
     public static <V> Graph<V> gremlinToHydra(
             org.apache.tinkerpop.gremlin.structure.Graph gremlinGraph,
