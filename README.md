@@ -90,71 +90,213 @@ pixi run test
 
 Requires: [pixi](https://pixi.sh/), Python 3.12+, local [Hydra](https://github.com/CategoricalData/hydra) checkout at `../hydra/`
 
-## Gremlin Console example
+## Gremlin example
 
-You can validate a TinkerPop graph interactively from the
-[Gremlin Console](https://tinkerpop.apache.org/docs/current/reference/#gremlin-console).
+You can validate a TinkerPop graph interactively from both Java and Python.
+Both examples use TinkerPop's built-in
+[Modern graph](https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/tinkergraph/structure/TinkerFactory.html)
+and demonstrate the same workflow: load the graph, validate it against a
+graph schema, break it, and see the validation error.
 
-### Setup
+The Java demo runs in the
+[Gremlin Console](https://tinkerpop.apache.org/docs/current/reference/#gremlin-console)
+using an in-process TinkerGraph — no server required.
+The Python demo uses
+[gremlinpython](https://pypi.org/project/gremlinpython/) to connect to a
+running [Gremlin Server](https://tinkerpop.apache.org/docs/current/reference/#gremlin-server),
+demonstrating validation against a live graph database.
 
-Build the project and collect the jars needed by the console:
+### Gremlin Server setup (for both Java and Python)
+
+Download [Gremlin Server](https://tinkerpop.apache.org/downloads.html)
+(version 3.8.0 or later) and start it with the Modern graph configuration:
+
+```bash
+bin/gremlin-server.sh conf/gremlin-server-modern.yaml
+```
+
+This starts a server on `ws://localhost:8182/gremlin` with the Modern graph
+pre-loaded.
+
+### Java setup
+
+Build the project and collect the JARs needed for the
+[Gremlin Console](https://tinkerpop.apache.org/docs/current/reference/#gremlin-console):
 
 ```bash
 ./gradlew consoleLibs
 ```
 
-Then copy `build/console-libs/*.jar` into the Gremlin Console's `lib/` directory:
+Copy `build/console-libs/*.jar` into the Gremlin Console's `lib/` directory:
 
 ```bash
 cp build/console-libs/*.jar /path/to/apache-tinkerpop-gremlin-console/lib/
 ```
 
-### Session
+### Java session
+
+Start the Gremlin Console:
+
+```bash
+bin/gremlin.sh
+```
+
+Connect to Gremlin Server. We also define a `reset()` helper that reloads
+the Modern graph on the server, so each example below can start from a clean
+state:
 
 ```groovy
-gremlin> import hydra.core.*
-gremlin> import hydra.dsl.*
-gremlin> import hydra.pg.dsl.Graphs
-gremlin> import hydra.pg.model.*
-gremlin> import hydra.pg.validation.Validation
-gremlin> import hydra.reflect.Reflect
-gremlin> import net.fortytwo.hydra.hydrapop.HydraGremlinBridge
+import net.fortytwo.hydra.hydrapop.Validate
+import org.apache.tinkerpop.gremlin.driver.Cluster
+import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection
+import org.apache.tinkerpop.gremlin.structure.T
 
-// Define a schema for the Modern graph
-gremlin> personType = Graphs.vertexType("person", LiteralTypes.int32()).property("name", LiteralTypes.string(), true).property("age", LiteralTypes.int32(), false).build()
-gremlin> softwareType = Graphs.vertexType("software", LiteralTypes.int32()).property("name", LiteralTypes.string(), true).property("lang", LiteralTypes.string(), true).build()
-gremlin> knowsType = Graphs.edgeType("knows", LiteralTypes.int32(), "person", "person").property("weight", LiteralTypes.float64(), true).build()
-gremlin> createdType = Graphs.edgeType("created", LiteralTypes.int32(), "person", "software").property("weight", LiteralTypes.float64(), true).build()
-gremlin> vtypes = [:]; vtypes[personType.label] = personType; vtypes[softwareType.label] = softwareType
-gremlin> etypes = [:]; etypes[knowsType.label] = knowsType; etypes[createdType.label] = createdType
-gremlin> schema = new GraphSchema(vtypes, etypes)
+cluster = Cluster.open('conf/remote-objects.yaml')
+g = traversal().withRemote(DriverRemoteConnection.using(cluster, 'g'))
+client = cluster.connect()
+reset = { client.submit('graph.traversal().V().drop().iterate(); TinkerFactory.generateModern(graph)').all().get() }
+```
 
-// Convert a value from TinkerPop to a Hydra Literal
-gremlin> objectToLiteral = { obj ->
-           if (obj instanceof String) return Literals.string(obj)
-           if (obj instanceof Integer) return Literals.int32(obj)
-           if (obj instanceof Double) return Literals.float64(obj)
-           throw new RuntimeException("unsupported: " + obj.getClass())
-         } as java.util.function.Function
+Define the schema for the Modern graph:
 
-// Set up validation functions
-gremlin> checkLiteral = { type -> { value ->
-           def actual = Reflect.literalType(value)
-           type.equals(actual) ? hydra.util.Maybe.nothing()
-             : hydra.util.Maybe.just("expected " + LiteralTypes.showLiteralType(type) + ", got " + LiteralTypes.showLiteralType(actual))
-         } as java.util.function.Function } as java.util.function.Function
-gremlin> showLiteral = { lit -> Literals.showLiteral(lit) } as java.util.function.Function
+```groovy
+import hydra.dsl.*
+import hydra.pg.dsl.Graphs
+import hydra.pg.model.*
 
-// Helper to display validation results
-gremlin> validate = { g -> def h = HydraGremlinBridge.gremlinToHydra(g, objectToLiteral); def r = Validation.validateGraph(checkLiteral, showLiteral, schema, h); r.isJust() ? "INVALID - " + r.fromJust() : "VALID" }
+personType = Graphs.vertexType("person", LiteralTypes.int32()).property("name", LiteralTypes.string(), true).property("age", LiteralTypes.int32(), false).build()
+softwareType = Graphs.vertexType("software", LiteralTypes.int32()).property("name", LiteralTypes.string(), true).property("lang", LiteralTypes.string(), true).build()
+knowsType = Graphs.edgeType("knows", LiteralTypes.int32(), "person", "person").property("weight", LiteralTypes.float64(), true).build()
+createdType = Graphs.edgeType("created", LiteralTypes.int32(), "person", "software").property("weight", LiteralTypes.float64(), true).build()
+vtypes = [:]; vtypes[personType.label] = personType; vtypes[softwareType.label] = softwareType
+etypes = [:]; etypes[knowsType.label] = knowsType; etypes[createdType.label] = createdType
+schema = new GraphSchema(vtypes, etypes)
+```
 
-// Load the Modern graph and validate -- should pass
-gremlin> graph = TinkerFactory.createModern()
-gremlin> validate(graph)
-==>VALID
+Validate the unmodified Modern graph (should pass):
 
-// Now break it: remove a required property
-gremlin> graph.vertices(1).next().property("name").remove()
-gremlin> validate(graph)
-==>INVALID - Invalid vertex with id integer:int32:1: Invalid property: Missing value for : name
+```groovy
+reset()
+Validate.validate(schema, g)
+```
+
+Remove a required property:
+
+```groovy
+reset()
+g.V(1).properties('name').drop().iterate()
+Validate.validate(schema, g)
+```
+
+Add a vertex with an unknown label:
+
+```groovy
+reset()
+g.addV('robot').property(T.id, 99).property('name', 'Bender').next()
+Validate.validate(schema, g)
+```
+
+Set a property to the wrong type:
+
+```groovy
+reset()
+g.V(1).property('name', 999).iterate()
+Validate.validate(schema, g)
+```
+
+Add a "created" edge to a person (should be person → software):
+
+```groovy
+reset()
+g.V(4).addE('created').to(__.V(1)).property(T.id, 99).property('weight', 0.5d).next()
+Validate.validate(schema, g)
+```
+
+### Python setup
+
+Install dependencies (includes gremlinpython and hydra-python):
+
+```bash
+pixi install
+```
+
+### Python session
+
+Start a Python REPL with the project dependencies:
+
+```bash
+pixi run console
+```
+
+Connect to Gremlin Server. As with the Java session, we define a `reset()`
+helper that reloads the Modern graph on the server:
+
+```python
+from gremlin_python.process.anonymous_traversal import traversal
+from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
+from gremlin_python.driver.client import Client
+from gremlin_python.process.traversal import T
+from hydrapop.validate import validate
+
+conn = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g')
+g = traversal().with_remote(conn)
+client = Client('ws://localhost:8182/gremlin', 'g')
+
+def reset():
+    client.submit(
+        "graph.traversal().V().drop().iterate();"
+        "TinkerFactory.generateModern(graph)").all().result()
+```
+
+Define the schema for the Modern graph:
+
+```python
+from hydrapop.dsl.pg import vertex_type, edge_type, graph_schema, int32, string, float64
+
+person_type = vertex_type("person", int32()).property("name", string(), True).property("age", int32(), False).build()
+software_type = vertex_type("software", int32()).property("name", string(), True).property("lang", string(), True).build()
+knows_type = edge_type("knows", int32(), "person", "person").property("weight", float64(), True).build()
+created_type = edge_type("created", int32(), "person", "software").property("weight", float64(), True).build()
+schema = graph_schema([person_type, software_type], [knows_type, created_type])
+```
+
+Validate the unmodified Modern graph (should pass):
+
+```python
+reset()
+validate(schema, g)
+```
+
+Remove a required property:
+
+```python
+reset()
+g.V(1).properties('name').drop().iterate()
+validate(schema, g)
+```
+
+Add a vertex with an unknown label:
+
+```python
+reset()
+g.addV('robot').property(T.id, 99).property('name', 'Bender').iterate()
+validate(schema, g)
+```
+
+Set a property to the wrong type:
+
+```python
+reset()
+g.V(1).property('name', 999).iterate()
+validate(schema, g)
+```
+
+Add a "created" edge to a person (should be person → software):
+
+```python
+reset()
+josh = g.V(4).next()
+marko = g.V(1).next()
+g.V(josh).addE('created').to(marko).property(T.id, 99).property('weight', 0.5).iterate()
+validate(schema, g)
 ```

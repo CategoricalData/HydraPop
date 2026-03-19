@@ -184,36 +184,20 @@ class ExampleGraphs {
      * Converts a plain Java object from TinkerPop back to a Hydra Literal.
      */
     static Literal objectToLiteral(Object obj) {
-        if (obj instanceof String) {
-            return Literals.string((String) obj);
-        } else if (obj instanceof Integer) {
-            return Literals.int32((Integer) obj);
-        } else if (obj instanceof Float) {
-            return Literals.float32((Float) obj);
-        } else if (obj instanceof Double) {
-            return Literals.float64((Double) obj);
-        }
-        throw new UnsupportedOperationException("Unsupported object type: " + obj.getClass());
+        return HydraGremlinBridge.objectToLiteral(obj);
     }
 
     /**
      * Checks whether a Literal value matches a LiteralType.
      */
     static java.util.function.Function<Literal, Maybe<String>> checkLiteral(LiteralType type) {
-        return value -> {
-            LiteralType actual = Reflect.literalType(value);
-            if (type.equals(actual)) {
-                return Maybe.nothing();
-            }
-            return Maybe.just("expected " + LiteralTypes.showLiteralType(type)
-                    + ", got " + LiteralTypes.showLiteralType(actual));
-        };
+        return HydraGremlinBridge.checkLiteral(type);
     }
 
     /**
      * Displays a Literal value as a human-readable string.
      */
     static String showLiteral(Literal lit) {
-        return Literals.showLiteral(lit);
+        return HydraGremlinBridge.showLiteral(lit);
     }
 }

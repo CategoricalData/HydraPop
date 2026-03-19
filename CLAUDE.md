@@ -23,7 +23,9 @@ HydraPop/
         GenerateExampleData.java    # Encodes Java data as JSON for Python
       python/hydrapop/
         decode.py                   # JSON -> Hydra PG model decoders
-        validate.py                 # check_literal / show_literal callbacks
+        dsl/pg.py                   # Python PG DSL (vertex_type, edge_type, etc.)
+        gremlin_bridge.py           # gremlinpython -> Hydra PG model conversion
+        validate.py                 # check_literal / show_literal / validate()
     test/
       java/net/fortytwo/hydra/hydrapop/
         HydraGremlinBridgeTest.java   # Bridge tests (conversion + round-trips)
@@ -60,6 +62,10 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
 - **`HydraGremlinBridge`** -- Bidirectional conversion between Hydra and
   TinkerPop property graphs. Generic over the value type.
 
+- **`Validate`** -- Convenience method for validating a TinkerPop graph
+  against a Hydra `GraphSchema`. Wraps the `gremlinToHydra` + `validateGraph`
+  pipeline.
+
 - **`GenerateExampleData`** -- Encodes example data as JSON via Hydra's term
   encoder (`hydra.encode.pg.model.Model`) and JSON serializer
   (`hydra.json.encode.Encode`). Produces `src/gen-main/json/*.json`.
@@ -70,8 +76,18 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
   (`GraphSchema`, `Graph`, `Vertex`, `Edge`, `Literal`, etc.). Adapted from
   the Hydra validatepg demo.
 
+- **`hydrapop.dsl.pg`** -- Python DSL for building Hydra PG schemas. Mirrors
+  the Java `hydra.pg.dsl.Graphs` builder API with `vertex_type()`,
+  `edge_type()`, `graph_schema()`, and literal type shortcuts.
+
 - **`hydrapop.validate`** -- Provides `check_literal` and `show_literal`
-  callbacks for `hydra.pg.validation.validate_graph`.
+  callbacks for `hydra.pg.validation.validate_graph`, plus a convenience
+  `validate(schema, g)` function and `Result` class for interactive use.
+
+- **`hydrapop.gremlin_bridge`** -- Converts a TinkerPop graph (via
+  gremlinpython `GraphTraversalSource`) into a Hydra `Graph[Literal]`.
+  Python equivalent of Java's `HydraGremlinBridge.gremlinToHydra()`.
+  Requires `gremlinpython` and a running Gremlin Server.
 
 ## Build and test
 
@@ -114,6 +130,9 @@ The `hydra-python` conda package (from the
 Hydra types. The PG model and validation modules (`hydra.pg.model`,
 `hydra.pg.validation`) come from the local Hydra repo's `hydra-ext` via
 pytest's `pythonpath` configuration, since they are not yet packaged separately.
+
+The `gremlinpython` conda package (>= 3.8.0) provides the Python Gremlin
+driver, used by `hydrapop.gremlin_bridge` to connect to a Gremlin Server.
 
 A compatibility shim in `conftest.py` patches `hydra.lib.maybes.maybe` to
 support lazy default arguments, bridging a minor difference between the

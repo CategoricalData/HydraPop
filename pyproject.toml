@@ -22,9 +22,11 @@ hydra-python = ">=0.13.0"
 
 [tool.pixi.pypi-dependencies]
 hydrapop = { path = ".", editable = true }
+gremlinpython = ">=3.8.0"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest"
+console = { cmd = "python", env = { PYTHONPATH = "src/main/python:../hydra/hydra-ext/src/gen-main/python" } }
 
 [tool.pixi.feature.lint.tasks]
 lint = "ruff check"

@@ -1,16 +1,25 @@
 package net.fortytwo.hydra.hydrapop;
 
+import hydra.core.Literal;
+import hydra.core.LiteralType;
+import hydra.dsl.LiteralTypes;
+import hydra.dsl.Literals;
 import hydra.pg.model.Edge;
 import hydra.pg.model.EdgeLabel;
 import hydra.pg.model.Graph;
 import hydra.pg.model.PropertyKey;
 import hydra.pg.model.Vertex;
 import hydra.pg.model.VertexLabel;
+import hydra.reflect.Reflect;
+import hydra.util.Maybe;
 
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -116,6 +125,99 @@ public class HydraGremlinBridge {
         }
 
         return new Graph<>(vertices, edges);
+    }
+
+    /**
+     * Reads a TinkerPop graph into a Hydra property graph using traversals.
+     * Unlike {@link #gremlinToHydra(org.apache.tinkerpop.gremlin.structure.Graph, Function)},
+     * this method works with remote graph connections via a GraphTraversalSource.
+     */
+    @SuppressWarnings("unchecked")
+    public static <V> Graph<V> gremlinToHydra(
+            GraphTraversalSource g,
+            Function<Object, V> objectToValue) {
+
+        Map<V, Vertex<V>> vertices = new HashMap<>();
+        List<Map<Object, Object>> vertexMaps = g.V().elementMap().toList();
+        for (Map<Object, Object> vm : vertexMaps) {
+            V id = objectToValue.apply(vm.get(T.id));
+            VertexLabel label = new VertexLabel((String) vm.get(T.label));
+
+            Map<PropertyKey, V> properties = new HashMap<>();
+            for (Map.Entry<Object, Object> entry : vm.entrySet()) {
+                Object key = entry.getKey();
+                if (key.equals(T.id) || key.equals(T.label)) continue;
+                properties.put(new PropertyKey((String) key), objectToValue.apply(entry.getValue()));
+            }
+
+            vertices.put(id, new Vertex<>(label, id, properties));
+        }
+
+        Map<V, Edge<V>> edges = new HashMap<>();
+        List<Map<Object, Object>> edgeMaps = g.E().elementMap().toList();
+        for (Map<Object, Object> em : edgeMaps) {
+            V id = objectToValue.apply(em.get(T.id));
+            EdgeLabel label = new EdgeLabel((String) em.get(T.label));
+
+            Map<String, Object> outVertex = (Map<String, Object>) em.get(Direction.OUT);
+            Map<String, Object> inVertex = (Map<String, Object>) em.get(Direction.IN);
+            V outId = objectToValue.apply(outVertex.get(T.id));
+            V inId = objectToValue.apply(inVertex.get(T.id));
+
+            Map<PropertyKey, V> properties = new HashMap<>();
+            for (Map.Entry<Object, Object> entry : em.entrySet()) {
+                Object key = entry.getKey();
+                if (key.equals(T.id) || key.equals(T.label)
+                        || key.equals(Direction.OUT) || key.equals(Direction.IN)) continue;
+                properties.put(new PropertyKey((String) key), objectToValue.apply(entry.getValue()));
+            }
+
+            edges.put(id, new Edge<>(label, id, outId, inId, properties));
+        }
+
+        return new Graph<>(vertices, edges);
+    }
+
+    /**
+     * Converts a plain Java object from TinkerPop to a Hydra Literal.
+     * Supports String, Integer, Float, and Double.
+     */
+    public static Literal objectToLiteral(Object obj) {
+        if (obj instanceof String) {
+            return Literals.string((String) obj);
+        } else if (obj instanceof Integer) {
+            return Literals.int32((Integer) obj);
+        } else if (obj instanceof Long) {
+            return Literals.int32(((Long) obj).intValue());
+        } else if (obj instanceof Float) {
+            return Literals.float32((Float) obj);
+        } else if (obj instanceof Double) {
+            return Literals.float64((Double) obj);
+        }
+        throw new UnsupportedOperationException("Unsupported object type: " + obj.getClass());
+    }
+
+    /**
+     * Checks whether a Literal value matches a LiteralType.
+     * Returns a function that, given a Literal, returns Nothing if the type matches
+     * or Just(errorMessage) if it does not.
+     */
+    public static Function<Literal, Maybe<String>> checkLiteral(LiteralType type) {
+        return value -> {
+            LiteralType actual = Reflect.literalType(value);
+            if (type.equals(actual)) {
+                return Maybe.nothing();
+            }
+            return Maybe.just("expected " + LiteralTypes.showLiteralType(type)
+                    + ", got " + LiteralTypes.showLiteralType(actual));
+        };
+    }
+
+    /**
+     * Displays a Literal value as a human-readable string.
+     */
+    public static String showLiteral(Literal lit) {
+        return Literals.showLiteral(lit);
     }
 
     private static org.apache.tinkerpop.gremlin.structure.Vertex findVertex(

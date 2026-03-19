@@ -5,7 +5,22 @@ hydra.pg.validation.validate_graph.
 """
 
 import hydra.core
+import hydra.lib.maybes
 from hydra.dsl.python import Just, Nothing
+
+# Patch hydra.lib.maybes.maybe to support lazy default arguments (lambdas).
+# The hydra.pg.validation module (generated from Hydra 0.14.0+) passes lambdas
+# as the default argument, but hydra-python 0.13.0's maybe() treats them as
+# plain values. This can be removed once hydra-python >= 0.14.0 is available.
+_original_maybe = hydra.lib.maybes.maybe
+
+
+def _lazy_maybe(default, f, x):
+    result = _original_maybe(default, f, x)
+    return result() if callable(result) else result
+
+
+hydra.lib.maybes.maybe = _lazy_maybe
 
 
 _FLOAT_TYPE_NAMES = {
@@ -97,3 +112,48 @@ def check_literal(lt, lv):
     if expected == actual:
         return Nothing()
     return Just(f"expected {expected}, got {actual}")
+
+
+class Result:
+    """The result of validating a graph against a schema."""
+
+    def __init__(self, error):
+        self._error = error
+
+    @property
+    def is_valid(self):
+        return self._error is None
+
+    @property
+    def error(self):
+        return self._error
+
+    def __repr__(self):
+        return "VALID" if self._error is None else f"INVALID - {self._error}"
+
+
+def validate(schema, g):
+    """Validate a TinkerPop graph (via gremlinpython traversal source) against a schema.
+
+    Parameters
+    ----------
+    schema : hydra.pg.model.GraphSchema
+        The schema to validate against.
+    g : GraphTraversalSource
+        A gremlinpython traversal source connected to a Gremlin Server.
+
+    Returns
+    -------
+    Result
+        A result whose ``repr()`` is either "VALID" or "INVALID - ...".
+    """
+    import hydra.pg.validation as pg_validation
+    from hydrapop.gremlin_bridge import gremlin_to_hydra
+
+    hydra_graph = gremlin_to_hydra(g)
+    result = pg_validation.validate_graph(check_literal, show_literal, schema, hydra_graph)
+    match result:
+        case Just(msg):
+            return Result(msg)
+        case _:
+            return Result(None)
