@@ -35,7 +35,7 @@ HydraPop/
     gen-main/
       json/                         # Generated: schema + graph JSON files
   build.gradle                      # Java build (Gradle)
-  settings.gradle                   # Composite build with local Hydra
+  settings.gradle                   # Gradle settings (project name only)
   pyproject.toml                    # Python build (pixi + hatchling + pytest)
 ```
 
@@ -118,7 +118,7 @@ Requires: [pixi](https://pixi.sh/), Python 3.12+
 
 | Dependency | Version | Scope |
 |------------|---------|-------|
-| hydra-ext  | 0.13.0  | api |
+| hydra-ext  | 0.14.1  | api |
 | gremlin-core | 3.8.0 | api |
 | tinkergraph-gremlin | 3.8.0 | test |
 | JUnit 5 | 5.9.2 | test |
@@ -127,17 +127,11 @@ Requires: [pixi](https://pixi.sh/), Python 3.12+
 
 The `hydra-python` conda package (from the
 [meso-forge](https://prefix.dev/channels/meso-forge) channel) provides core
-Hydra types. The PG model and validation modules (`hydra.pg.model`,
-`hydra.pg.validation`) come from the local Hydra repo's `hydra-ext` via
-pytest's `pythonpath` configuration, since they are not yet packaged separately.
+Hydra types, including the PG model and validation modules (`hydra.pg.model`,
+`hydra.pg.validation`).
 
 The `gremlinpython` conda package (>= 3.8.0) provides the Python Gremlin
 driver, used by `hydrapop.gremlin_bridge` to connect to a Gremlin Server.
-
-A compatibility shim in `conftest.py` patches `hydra.lib.maybes.maybe` to
-support lazy default arguments, bridging a minor difference between the
-0.13.0 library and the current `hydra.pg.validation` module. This shim can
-be removed once hydra-python >= 0.14.0 is available.
 
 ## Translingual data interchange
 

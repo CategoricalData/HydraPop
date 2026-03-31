@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    api 'net.fortytwo.hydra:hydra-ext:0.13.0'
+    api 'net.fortytwo.hydra:hydra-ext:0.14.1'
     api 'org.apache.tinkerpop:gremlin-core:3.8.0'
 
     testImplementation platform('org.junit:junit-bom:5.9.2')

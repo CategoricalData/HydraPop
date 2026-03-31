@@ -18,7 +18,7 @@ channels = ["https://prefix.dev/meso-forge", "conda-forge"]
 platforms = ["osx-64", "osx-arm64", "linux-64"]
 
 [tool.pixi.dependencies]
-hydra-python = ">=0.13.0"
+hydra-python = ">=0.14.1"
 
 [tool.pixi.pypi-dependencies]
 hydrapop = { path = ".", editable = true }
@@ -26,7 +26,7 @@ gremlinpython = ">=3.8.0"
 
 [tool.pixi.feature.test.tasks]
 test = "pytest"
-console = { cmd = "python", env = { PYTHONPATH = "src/main/python:../hydra/hydra-ext/src/gen-main/python" } }
+console = { cmd = "python", env = { PYTHONPATH = "src/main/python" } }
 
 [tool.pixi.feature.lint.tasks]
 lint = "ruff check"
@@ -64,14 +64,12 @@ convention = "numpy"
 typeCheckingMode = "strict"
 extraPaths = [
     "src/main/python",
-    "../hydra/hydra-ext/src/gen-main/python",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = [
     "src/main/python",
     "src/test/python",
-    "../hydra/hydra-ext/src/gen-main/python",
 ]
 testpaths = [
     "src/test/python",

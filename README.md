@@ -69,14 +69,9 @@ Both the Java and Python test suites exercise the same validation conditions usi
 ./gradlew consoleLibs
 ```
 
-Requires: **Java 17+**, Gradle 8.12.1 (wrapper included)
-Note: with the upcoming 0.14 of Hydra, only Java 11 will be required.
+Requires: **Java 11+**, Gradle 8.12.1 (wrapper included)
 
 ### Python
-
-HydraPop requires a local checkout of the [Hydra](https://github.com/CategoricalData/hydra)
-repository as a sibling directory (i.e., `../hydra/`) for the PG model and validation modules,
-which are not yet available as a standalone package; they will be available by the 0.15.x release at the latest.
 
 ```bash
 # Install pixi (if not already installed)
@@ -89,7 +84,7 @@ pixi install
 pixi run test
 ```
 
-Requires: [pixi](https://pixi.sh/), Python 3.12+, local [Hydra](https://github.com/CategoricalData/hydra) checkout at `../hydra/`
+Requires: [pixi](https://pixi.sh/), Python 3.12+
 
 ## Gremlin example
 

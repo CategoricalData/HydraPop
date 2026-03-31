@@ -3,17 +3,18 @@ package net.fortytwo.hydra.hydrapop;
 import hydra.core.Literal;
 import hydra.core.LiteralType;
 import hydra.core.Term;
-import hydra.encode.core.Core;
-import hydra.encode.pg.model.Model;
-import hydra.json.encode.Encode;
+import hydra.encode.Core;
+import hydra.encode.pg.Model;
+import hydra.json.Encode;
+import hydra.json.Writer;
 import hydra.json.model.Value;
-import hydra.json.writer.Writer;
 import hydra.pg.model.Edge;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
 import hydra.pg.model.PropertyKey;
 import hydra.pg.model.Vertex;
 import hydra.util.Either;
+import hydra.util.PersistentMap;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,7 +61,7 @@ public class GenerateExampleData {
                     Vertex<Literal> marko = vertices.get(id1);
                     java.util.Map<PropertyKey, Literal> props = new java.util.HashMap<>(marko.properties);
                     props.remove(new PropertyKey("name"));
-                    vertices.put(id1, new Vertex<>(marko.label, marko.id, props));
+                    vertices.put(id1, new Vertex<>(marko.label, marko.id, PersistentMap.fromMap(props)));
                 })));
 
         writeJsonFile(outputDir, "wrong_id_type.json",
@@ -94,7 +95,7 @@ public class GenerateExampleData {
                     Vertex<Literal> marko = vertices.get(id1);
                     java.util.Map<PropertyKey, Literal> props = new java.util.HashMap<>(marko.properties);
                     props.put(new PropertyKey("name"), hydra.dsl.Literals.int32(42));
-                    vertices.put(id1, new Vertex<>(marko.label, marko.id, props));
+                    vertices.put(id1, new Vertex<>(marko.label, marko.id, PersistentMap.fromMap(props)));
                 })));
 
         writeJsonFile(outputDir, "unexpected_property_key.json",
@@ -103,7 +104,7 @@ public class GenerateExampleData {
                     Vertex<Literal> marko = vertices.get(id1);
                     java.util.Map<PropertyKey, Literal> props = new java.util.HashMap<>(marko.properties);
                     props.put(new PropertyKey("favoriteColor"), hydra.dsl.Literals.string("blue"));
-                    vertices.put(id1, new Vertex<>(marko.label, marko.id, props));
+                    vertices.put(id1, new Vertex<>(marko.label, marko.id, PersistentMap.fromMap(props)));
                 })));
 
         writeJsonFile(outputDir, "wrong_in_vertex_label.json",
@@ -194,6 +195,6 @@ public class GenerateExampleData {
         java.util.Map<Literal, Vertex<Literal>> vertices = new java.util.HashMap<>(base.vertices);
         java.util.Map<Literal, Edge<Literal>> edges = new java.util.HashMap<>(base.edges);
         modifier.modify(vertices, edges);
-        return new Graph<>(vertices, edges);
+        return new Graph<>(PersistentMap.fromMap(vertices), PersistentMap.fromMap(edges));
     }
 }

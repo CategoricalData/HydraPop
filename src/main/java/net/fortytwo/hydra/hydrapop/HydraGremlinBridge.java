@@ -10,14 +10,14 @@ import hydra.pg.model.Graph;
 import hydra.pg.model.PropertyKey;
 import hydra.pg.model.Vertex;
 import hydra.pg.model.VertexLabel;
-import hydra.reflect.Reflect;
+import hydra.Reflect;
 import hydra.util.Maybe;
+import hydra.util.PersistentMap;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -88,24 +88,24 @@ public class HydraGremlinBridge {
             org.apache.tinkerpop.gremlin.structure.Graph gremlinGraph,
             Function<Object, V> objectToValue) {
 
-        Map<V, Vertex<V>> vertices = new HashMap<>();
+        PersistentMap<V, Vertex<V>> vertices = PersistentMap.empty();
         Iterator<org.apache.tinkerpop.gremlin.structure.Vertex> vertexIter = gremlinGraph.vertices();
         while (vertexIter.hasNext()) {
             org.apache.tinkerpop.gremlin.structure.Vertex gv = vertexIter.next();
             V id = objectToValue.apply(gv.id());
             VertexLabel label = new VertexLabel(gv.label());
 
-            Map<PropertyKey, V> properties = new HashMap<>();
+            PersistentMap<PropertyKey, V> properties = PersistentMap.empty();
             Iterator<org.apache.tinkerpop.gremlin.structure.VertexProperty<Object>> propIter = gv.properties();
             while (propIter.hasNext()) {
                 org.apache.tinkerpop.gremlin.structure.VertexProperty<Object> prop = propIter.next();
-                properties.put(new PropertyKey(prop.key()), objectToValue.apply(prop.value()));
+                properties = properties.insert(new PropertyKey(prop.key()), objectToValue.apply(prop.value()));
             }
 
-            vertices.put(id, new Vertex<>(label, id, properties));
+            vertices = vertices.insert(id, new Vertex<>(label, id, properties));
         }
 
-        Map<V, Edge<V>> edges = new HashMap<>();
+        PersistentMap<V, Edge<V>> edges = PersistentMap.empty();
         Iterator<org.apache.tinkerpop.gremlin.structure.Edge> edgeIter = gremlinGraph.edges();
         while (edgeIter.hasNext()) {
             org.apache.tinkerpop.gremlin.structure.Edge ge = edgeIter.next();
@@ -114,14 +114,14 @@ public class HydraGremlinBridge {
             V outId = objectToValue.apply(ge.outVertex().id());
             V inId = objectToValue.apply(ge.inVertex().id());
 
-            Map<PropertyKey, V> properties = new HashMap<>();
+            PersistentMap<PropertyKey, V> properties = PersistentMap.empty();
             Iterator<org.apache.tinkerpop.gremlin.structure.Property<Object>> propIter = ge.properties();
             while (propIter.hasNext()) {
                 org.apache.tinkerpop.gremlin.structure.Property<Object> prop = propIter.next();
-                properties.put(new PropertyKey(prop.key()), objectToValue.apply(prop.value()));
+                properties = properties.insert(new PropertyKey(prop.key()), objectToValue.apply(prop.value()));
             }
 
-            edges.put(id, new Edge<>(label, id, outId, inId, properties));
+            edges = edges.insert(id, new Edge<>(label, id, outId, inId, properties));
         }
 
         return new Graph<>(vertices, edges);
@@ -137,23 +137,23 @@ public class HydraGremlinBridge {
             GraphTraversalSource g,
             Function<Object, V> objectToValue) {
 
-        Map<V, Vertex<V>> vertices = new HashMap<>();
+        PersistentMap<V, Vertex<V>> vertices = PersistentMap.empty();
         List<Map<Object, Object>> vertexMaps = g.V().elementMap().toList();
         for (Map<Object, Object> vm : vertexMaps) {
             V id = objectToValue.apply(vm.get(T.id));
             VertexLabel label = new VertexLabel((String) vm.get(T.label));
 
-            Map<PropertyKey, V> properties = new HashMap<>();
+            PersistentMap<PropertyKey, V> properties = PersistentMap.empty();
             for (Map.Entry<Object, Object> entry : vm.entrySet()) {
                 Object key = entry.getKey();
                 if (key.equals(T.id) || key.equals(T.label)) continue;
-                properties.put(new PropertyKey((String) key), objectToValue.apply(entry.getValue()));
+                properties = properties.insert(new PropertyKey((String) key), objectToValue.apply(entry.getValue()));
             }
 
-            vertices.put(id, new Vertex<>(label, id, properties));
+            vertices = vertices.insert(id, new Vertex<>(label, id, properties));
         }
 
-        Map<V, Edge<V>> edges = new HashMap<>();
+        PersistentMap<V, Edge<V>> edges = PersistentMap.empty();
         List<Map<Object, Object>> edgeMaps = g.E().elementMap().toList();
         for (Map<Object, Object> em : edgeMaps) {
             V id = objectToValue.apply(em.get(T.id));
@@ -164,15 +164,15 @@ public class HydraGremlinBridge {
             V outId = objectToValue.apply(outVertex.get(T.id));
             V inId = objectToValue.apply(inVertex.get(T.id));
 
-            Map<PropertyKey, V> properties = new HashMap<>();
+            PersistentMap<PropertyKey, V> properties = PersistentMap.empty();
             for (Map.Entry<Object, Object> entry : em.entrySet()) {
                 Object key = entry.getKey();
                 if (key.equals(T.id) || key.equals(T.label)
                         || key.equals(Direction.OUT) || key.equals(Direction.IN)) continue;
-                properties.put(new PropertyKey((String) key), objectToValue.apply(entry.getValue()));
+                properties = properties.insert(new PropertyKey((String) key), objectToValue.apply(entry.getValue()));
             }
 
-            edges.put(id, new Edge<>(label, id, outId, inId, properties));
+            edges = edges.insert(id, new Edge<>(label, id, outId, inId, properties));
         }
 
         return new Graph<>(vertices, edges);

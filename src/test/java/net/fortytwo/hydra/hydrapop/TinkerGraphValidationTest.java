@@ -5,7 +5,7 @@ import hydra.core.LiteralType;
 import hydra.dsl.Literals;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
-import hydra.pg.validation.Validation;
+import hydra.pg.Validation;
 import hydra.util.Maybe;
 
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -90,7 +90,7 @@ public class TinkerGraphValidationTest {
             java.util.Map<Literal, hydra.pg.model.Vertex<Literal>> vertices =
                     new java.util.HashMap<>(hydraGraph.vertices);
             vertices.remove(Literals.int32(2));
-            Graph<Literal> modified = new Graph<>(vertices, hydraGraph.edges);
+            Graph<Literal> modified = new Graph<>(hydra.util.PersistentMap.fromMap(vertices), hydraGraph.edges);
 
             Maybe<String> result = Validation.validateGraph(
                     ExampleGraphs::checkLiteral,

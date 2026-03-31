@@ -197,9 +197,7 @@ public class HydraGremlinBridgeTest {
                 .property("name", hydra.dsl.Literals.string("zaphod"))
                 .property("age", hydra.dsl.Literals.int32(250))
                 .build();
-        Map<Literal, Vertex<Literal>> modifiedVertices = new HashMap<>(handBuilt.vertices);
-        modifiedVertices.put(zaphod.id, zaphod);
-        Graph<Literal> modified = new Graph<>(modifiedVertices, handBuilt.edges);
+        Graph<Literal> modified = new Graph<>(handBuilt.vertices.insert(zaphod.id, zaphod), handBuilt.edges);
 
         try (TinkerGraph modern = TinkerFactory.createModern()) {
             Graph<Literal> fromTinkerPop = HydraGremlinBridge.gremlinToHydra(modern,

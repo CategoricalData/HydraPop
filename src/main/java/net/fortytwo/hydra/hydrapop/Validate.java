@@ -4,7 +4,7 @@ import hydra.core.Literal;
 import hydra.core.LiteralType;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
-import hydra.pg.validation.Validation;
+import hydra.pg.Validation;
 import hydra.util.Maybe;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;

@@ -7,7 +7,7 @@ import hydra.core.LiteralType;
 import hydra.dsl.LiteralTypes;
 import hydra.dsl.Literals;
 import hydra.pg.dsl.Graphs;
-import hydra.reflect.Reflect;
+import hydra.Reflect;
 import hydra.util.Maybe;
 import hydra.pg.model.Edge;
 import hydra.pg.model.EdgeLabel;
@@ -17,6 +17,8 @@ import hydra.pg.model.GraphSchema;
 import hydra.pg.model.Vertex;
 import hydra.pg.model.VertexLabel;
 import hydra.pg.model.VertexType;
+
+import hydra.util.PersistentMap;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -64,7 +66,7 @@ class ExampleGraphs {
         edgeTypes.put(knowsType.label, knowsType);
         edgeTypes.put(createdType.label, createdType);
 
-        return new GraphSchema<>(vertexTypes, edgeTypes);
+        return new GraphSchema<>(PersistentMap.fromMap(vertexTypes), PersistentMap.fromMap(edgeTypes));
     }
 
     /**
@@ -140,7 +142,7 @@ class ExampleGraphs {
             edges.put(e.id, e);
         }
 
-        return new Graph<>(vertices, edges);
+        return new Graph<>(PersistentMap.fromMap(vertices), PersistentMap.fromMap(edges));
     }
 
     /**
