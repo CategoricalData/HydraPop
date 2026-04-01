@@ -102,6 +102,11 @@ The Python demo uses
 running [Gremlin Server](https://tinkerpop.apache.org/docs/current/reference/#gremlin-server),
 demonstrating validation against a live graph database.
 
+These steps are also available as a Jupyter notebook at
+[notebooks/validation.ipynb](notebooks/validation.ipynb), which mirrors the
+Python session below and also includes a JSON interchange section that
+runs without a server.
+
 ### Gremlin Server setup (for both Java and Python)
 
 Download [Gremlin Server](https://tinkerpop.apache.org/downloads.html)
@@ -215,6 +220,15 @@ Install dependencies (includes gremlinpython and hydra-python):
 ```bash
 pixi install
 ```
+
+To run the [Jupyter notebook](notebooks/validation.ipynb) instead of the REPL session below:
+
+```bash
+pixi run register-kernel
+pixi run jupyter lab
+```
+
+Then select the **HydraPop** kernel when opening the notebook.
 
 ### Python session
 

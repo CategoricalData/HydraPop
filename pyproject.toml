@@ -12,6 +12,7 @@ dependencies = []
 test = ["pytest>=8.3.4"]
 lint = ["ruff>=0.8.4"]
 check = ["pyright>=1.1.391"]
+notebook = ["ipykernel>=6.29", "nest-asyncio>=1.6"]
 
 [tool.pixi.workspace]
 channels = ["https://prefix.dev/meso-forge", "conda-forge"]
@@ -35,8 +36,11 @@ format = "ruff format"
 [tool.pixi.feature.check.tasks]
 check = "pyright"
 
+[tool.pixi.feature.notebook.tasks]
+register-kernel = "python -m ipykernel install --user --name hydrapop --display-name 'HydraPop'"
+
 [tool.pixi.environments]
-default = { features = ["test", "lint", "check"] }
+default = { features = ["test", "lint", "check", "notebook"] }
 
 [tool.ruff]
 line-length = 88
