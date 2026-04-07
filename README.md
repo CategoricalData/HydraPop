@@ -56,6 +56,8 @@ Both the Java and Python test suites exercise the same validation conditions usi
 
 ## Build and test
 
+Clone this repository, then run the following commands from the project root.
+
 ### Java
 
 ```bash
