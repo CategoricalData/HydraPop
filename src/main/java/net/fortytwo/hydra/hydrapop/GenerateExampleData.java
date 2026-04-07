@@ -76,7 +76,7 @@ public class GenerateExampleData {
                 encodeGraphToJson(buildModifiedGraph((vertices, edges) -> {
                     Literal id = hydra.dsl.Literals.int32(100);
                     vertices.put(id, hydra.pg.dsl.Graphs.<Literal>vertex("robot", id)
-                            .property("name", hydra.dsl.Literals.string("bender"))
+                            .property("name", hydra.dsl.Literals.string("marvin"))
                             .build());
                 })));
 

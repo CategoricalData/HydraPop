@@ -29,7 +29,7 @@ import java.util.Map;
  *
  * @see <a href="https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/tinkergraph/structure/TinkerFactory.html">TinkerFactory</a>
  */
-class ExampleGraphs {
+public class ExampleGraphs {
 
     private ExampleGraphs() {
     }
@@ -39,7 +39,7 @@ class ExampleGraphs {
      *
      * @see <a href="https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/tinkergraph/structure/TinkerFactory.html">TinkerFactory.createModern()</a>
      */
-    static GraphSchema<LiteralType> buildModernGraphSchema() {
+    public static GraphSchema<LiteralType> buildModernGraphSchema() {
         VertexType<LiteralType> personType = Graphs.<LiteralType>vertexType("person", LiteralTypes.int32())
                 .property("name", LiteralTypes.string(), true)
                 .property("age", LiteralTypes.int32(), false)

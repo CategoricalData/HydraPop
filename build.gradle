@@ -29,7 +29,7 @@ test {
 
 // Collects all runtime jars (excluding TinkerPop, which the Gremlin Console already provides)
 // into build/console-libs/ for use with the Gremlin Console.
-tasks.register('consoleLibs', Copy) {
+tasks.register('consoleLibs', Sync) {
     into layout.buildDirectory.dir('console-libs')
     from(configurations.runtimeClasspath) {
         exclude 'gremlin-*'
