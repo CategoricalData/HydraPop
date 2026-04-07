@@ -15,7 +15,7 @@ check = ["pyright>=1.1.391"]
 notebook = ["ipykernel>=6.29", "nest-asyncio>=1.6"]
 
 [tool.pixi.workspace]
-channels = ["https://prefix.dev/meso-forge", "conda-forge"]
+channels = ["conda-forge"]
 platforms = ["osx-64", "osx-arm64", "linux-64"]
 
 [tool.pixi.dependencies]

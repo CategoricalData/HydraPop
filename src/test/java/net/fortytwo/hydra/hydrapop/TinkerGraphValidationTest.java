@@ -107,7 +107,7 @@ public class TinkerGraphValidationTest {
     @Test
     public void testUnexpectedVertexLabel() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
-            g.addVertex(T.id, 99, T.label, "robot", "name", "Bender");
+            g.addVertex(T.id, 99, T.label, "robot", "name", "Marvin");
             Maybe<String> result = validate(g);
             assertInvalid(result, "Unexpected label");
         } catch (Exception e) {
@@ -206,7 +206,7 @@ public class TinkerGraphValidationTest {
     public void testMultipleIssuesReportsFirst() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
             // Issue 1: unexpected vertex label
-            g.addVertex(T.id, 99, T.label, "robot", "name", "Bender");
+            g.addVertex(T.id, 99, T.label, "robot", "name", "Marvin");
             // Issue 2: edge missing required "weight" property
             Vertex marko = g.vertices(1).next();
             Vertex lop = g.vertices(3).next();

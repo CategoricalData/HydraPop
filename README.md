@@ -77,7 +77,7 @@ Requires: **Java 11+**, Gradle 8.12.1 (wrapper included)
 # Install pixi (if not already installed)
 curl -fsSL https://pixi.sh/install.sh | bash
 
-# Install dependencies (pulls hydra-python from the meso-forge conda channel)
+# Install dependencies (pulls hydra-python from conda-forge)
 pixi install
 
 # Run tests
@@ -158,7 +158,7 @@ client = cluster.connect()
 reset = { client.submit('graph.traversal().V().drop().iterate(); TinkerFactory.generateModern(graph)').all().get() }
 ```
 
-Define the schema for the Modern graph:
+Now, you can either build your own schema for the Modern graph...
 
 ```groovy
 import hydra.dsl.*
@@ -172,6 +172,13 @@ createdType = Graphs.edgeType("created", LiteralTypes.int32(), "person", "softwa
 vtypes = [:]; vtypes[personType.label] = personType; vtypes[softwareType.label] = softwareType
 etypes = [:]; etypes[knowsType.label] = knowsType; etypes[createdType.label] = createdType
 schema = new GraphSchema(vtypes, etypes)
+```
+
+...or you can just load the one used in HydraPop's tests:
+
+```groovy
+import net.fortytwo.hydra.hydrapop.*
+schema = ExampleGraphs.buildModernGraphSchema()
 ```
 
 Validate the unmodified Modern graph (should pass):
@@ -193,7 +200,7 @@ Add a vertex with an unknown label:
 
 ```groovy
 reset()
-g.addV('robot').property(T.id, 99).property('name', 'Bender').next()
+g.addV('robot').property(T.id, 99).property('name', 'Marvin').next()
 Validate.validate(schema, g)
 ```
 
@@ -289,7 +296,7 @@ Add a vertex with an unknown label:
 
 ```python
 reset()
-g.addV('robot').property(T.id, 99).property('name', 'Bender').iterate()
+g.addV('robot').property(T.id, 99).property('name', 'Marvin').iterate()
 validate(schema, g)
 ```
 
