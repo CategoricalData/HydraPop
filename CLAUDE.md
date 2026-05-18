@@ -59,6 +59,15 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
   (`Graph<Literal>`) using Hydra's PG DSL. Also provides `literalToObject`,
   `objectToLiteral`, `checkLiteral`, and `showLiteral` helpers.
 
+- **`hydra/pg/dsl/`** -- Vendored copy of the fluent PG DSL helpers
+  (`Graphs`, `Queries`, and the `*Builder` classes) from
+  packages/hydra-java/src/main/java/hydra/pg/dsl/ in the Hydra 0.15.0 source
+  tree. The Hydra 0.15 release did not publish these classes in any Maven
+  artifact (`hydra-java:0.15.0` ships only the Java coder; `hydra-pg:0.15.0`
+  ships the model + validation but not the hand-written DSL helpers).
+  When Hydra publishes `hydra-pg-dsl` separately (planned for 0.16), this
+  vendored copy can be removed in favor of that dependency.
+
 - **`HydraGremlinBridge`** -- Bidirectional conversion between Hydra and
   TinkerPop property graphs. Generic over the value type.
 
@@ -80,9 +89,12 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
   the Java `hydra.pg.dsl.Graphs` builder API with `vertex_type()`,
   `edge_type()`, `graph_schema()`, and literal type shortcuts.
 
-- **`hydrapop.validate`** -- Provides `check_literal` and `show_literal`
-  callbacks for `hydra.pg.validation.validate_graph`, plus a convenience
-  `validate(schema, g)` function and `Result` class for interactive use.
+- **`hydrapop.validate`** -- Provides the `check_literal` callback for
+  `hydra.validate.pg.validate_graph` (typed `InvalidValueError` in 0.15+),
+  plus a convenience `validate(schema, g)` function and `Result` class for
+  interactive use. The 0.14 `show_literal` callback is no longer required
+  by the kernel API but is retained for callers that want a human-readable
+  rendering of a Literal.
 
 - **`hydrapop.gremlin_bridge`** -- Converts a TinkerPop graph (via
   gremlinpython `GraphTraversalSource`) into a Hydra `Graph[Literal]`.
@@ -118,17 +130,16 @@ Requires: [pixi](https://pixi.sh/), Python 3.12+
 
 | Dependency | Version | Scope |
 |------------|---------|-------|
-| hydra-ext  | 0.14.1  | api |
+| hydra-java | 0.15.0  | api |
 | gremlin-core | 3.8.0 | api |
 | tinkergraph-gremlin | 3.8.0 | test |
 | JUnit 5 | 5.9.2 | test |
 
 ### Python
 
-The `hydra-python` conda package (from the
-[meso-forge](https://prefix.dev/channels/meso-forge) channel) provides core
-Hydra types, including the PG model and validation modules (`hydra.pg.model`,
-`hydra.pg.validation`).
+The conda-forge packages `hydra-kernel` and `hydra-pg` (split out from the
+0.14 rolled-up `hydra-python` in Hydra 0.15) provide core Hydra types and
+the PG model + validation modules (`hydra.pg.model`, `hydra.validate.pg`).
 
 The `gremlinpython` conda package (>= 3.8.0) provides the Python Gremlin
 driver, used by `hydrapop.gremlin_bridge` to connect to a Gremlin Server.

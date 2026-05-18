@@ -19,7 +19,8 @@ channels = ["conda-forge"]
 platforms = ["osx-64", "osx-arm64", "linux-64"]
 
 [tool.pixi.dependencies]
-hydra-python = ">=0.14.1"
+hydra-kernel = ">=0.15.0"
+hydra-pg = ">=0.15.0"
 
 [tool.pixi.pypi-dependencies]
 hydrapop = { path = ".", editable = true }

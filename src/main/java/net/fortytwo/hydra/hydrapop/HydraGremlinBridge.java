@@ -4,6 +4,7 @@ import hydra.core.Literal;
 import hydra.core.LiteralType;
 import hydra.dsl.LiteralTypes;
 import hydra.dsl.Literals;
+import hydra.error.pg.InvalidValueError;
 import hydra.pg.model.Edge;
 import hydra.pg.model.EdgeLabel;
 import hydra.pg.model.Graph;
@@ -200,16 +201,20 @@ public class HydraGremlinBridge {
     /**
      * Checks whether a Literal value matches a LiteralType.
      * Returns a function that, given a Literal, returns Nothing if the type matches
-     * or Just(errorMessage) if it does not.
+     * or Just(InvalidValueError) if it does not.
+     *
+     * <p>This is the {@code checkValue} callback for {@link hydra.validate.Pg#validateGraph}
+     * when property values are Literals.
      */
-    public static Function<Literal, Maybe<String>> checkLiteral(LiteralType type) {
+    public static Function<Literal, Maybe<InvalidValueError>> checkLiteral(LiteralType type) {
         return value -> {
             LiteralType actual = Reflect.literalType(value);
             if (type.equals(actual)) {
                 return Maybe.nothing();
             }
-            return Maybe.just("expected " + LiteralTypes.showLiteralType(type)
-                    + ", got " + LiteralTypes.showLiteralType(actual));
+            return Maybe.just(new InvalidValueError(
+                    LiteralTypes.showLiteralType(type),
+                    Literals.showLiteral(value)));
         };
     }
 

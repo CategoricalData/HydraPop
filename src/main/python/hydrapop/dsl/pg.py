@@ -1,6 +1,15 @@
 """Python DSL for building Hydra property graph schemas.
 
 Mirrors the Java ``hydra.pg.dsl.Graphs`` builder API, adapted for Python.
+
+NOTE — temporary in-tree copy. The published ``hydra-pg`` 0.15.0 package
+does not ship a ``hydra.pg.dsl`` subpackage, so the Python equivalent of
+the Java DSL lives here for now. When HydraPop's Hydra dependency moves
+to a version that publishes ``hydra.pg.dsl`` (expected in the 0.16
+line), delete this module and update callers (``hydrapop.dsl.pg`` →
+``hydra.pg.dsl``). Check by inspecting an installed ``hydra/pg/``
+directory: if a ``dsl/`` subpackage is present upstream, this vendor
+copy should go away.
 """
 
 import hydra.core as core

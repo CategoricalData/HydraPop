@@ -192,7 +192,7 @@ public class ExampleGraphs {
     /**
      * Checks whether a Literal value matches a LiteralType.
      */
-    static java.util.function.Function<Literal, Maybe<String>> checkLiteral(LiteralType type) {
+    static java.util.function.Function<Literal, Maybe<hydra.error.pg.InvalidValueError>> checkLiteral(LiteralType type) {
         return HydraGremlinBridge.checkLiteral(type);
     }
 

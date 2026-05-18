@@ -162,7 +162,9 @@ public class GenerateExampleData {
     }
 
     private static String termToJson(Term term, String description) {
-        Either<String, Value> result = Encode.toJson(term);
+        // 0.15+ adds a type-directed Encode.toJson(types, name, type, term); we use the
+        // backwards-compatible untyped variant which the JSON writers still accept.
+        Either<String, Value> result = Encode.toJsonUntyped(term);
         return result.accept(new Either.Visitor<String, Value, String>() {
             @Override
             public String visit(Either.Left<String, Value> instance) {

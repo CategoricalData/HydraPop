@@ -1,10 +1,15 @@
 """Validation helpers for property graphs using Hydra.
 
-Provides the checkValue and showValue callbacks required by
-hydra.pg.validation.validate_graph.
+Provides the ``check_value`` callback required by ``hydra.validate.pg.validate_graph``,
+plus a high-level ``validate(schema, g)`` convenience wrapper.
+
+Hydra 0.15+ uses typed errors (``hydra.error.pg.InvalidGraphError``) rather than
+the bare ``Maybe[str]`` result of 0.14; the ``Result`` class here preserves the
+typed value for programmatic inspection while still providing a printable form.
 """
 
 import hydra.core
+import hydra.error.pg
 from hydra.dsl.python import Just, Nothing
 
 
@@ -92,15 +97,24 @@ def show_literal(lit):
 
 
 def check_literal(lt, lv):
+    """Check that a Literal value matches an expected LiteralType.
+
+    Returns ``Nothing()`` if the types match, ``Just(InvalidValueError(...))``
+    otherwise. This is the ``check_value`` callback for ``hydra.validate.pg.validate_graph``.
+    """
     expected = show_literal_type(lt)
     actual = literal_family(lv)
     if expected == actual:
         return Nothing()
-    return Just(f"expected {expected}, got {actual}")
+    return Just(hydra.error.pg.InvalidValueError(expected, show_literal(lv)))
 
 
 class Result:
-    """The result of validating a graph against a schema."""
+    """The result of validating a graph against a schema.
+
+    In 0.15+, ``error`` carries the typed ``InvalidGraphError`` rather than a
+    bare string; callers wanting a human-readable rendering can use ``repr(result)``.
+    """
 
     def __init__(self, error):
         self._error = error
@@ -130,15 +144,16 @@ def validate(schema, g):
     Returns
     -------
     Result
-        A result whose ``repr()`` is either "VALID" or "INVALID - ...".
+        A result whose ``repr()`` is either "VALID" or "INVALID - ...". The
+        ``error`` attribute, when present, is a typed ``InvalidGraphError``.
     """
-    import hydra.pg.validation as pg_validation
+    import hydra.validate.pg as pg_validation
     from hydrapop.gremlin_bridge import gremlin_to_hydra
 
     hydra_graph = gremlin_to_hydra(g)
-    result = pg_validation.validate_graph(check_literal, show_literal, schema, hydra_graph)
+    result = pg_validation.validate_graph(check_literal, schema, hydra_graph)
     match result:
-        case Just(msg):
-            return Result(msg)
+        case Just(err):
+            return Result(err)
         case _:
             return Result(None)

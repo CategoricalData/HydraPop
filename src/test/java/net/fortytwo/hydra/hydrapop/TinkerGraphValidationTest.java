@@ -3,16 +3,25 @@ package net.fortytwo.hydra.hydrapop;
 import hydra.core.Literal;
 import hydra.core.LiteralType;
 import hydra.dsl.Literals;
+import hydra.error.pg.InvalidEdgeError;
+import hydra.error.pg.InvalidElementPropertyError;
+import hydra.error.pg.InvalidGraphEdgeError;
+import hydra.error.pg.InvalidGraphError;
+import hydra.error.pg.InvalidGraphVertexError;
+import hydra.error.pg.InvalidPropertyError;
+import hydra.error.pg.InvalidVertexError;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
-import hydra.pg.Validation;
 import hydra.util.Maybe;
+import hydra.validate.Pg;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.jupiter.api.Test;
+
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,22 +39,17 @@ public class TinkerGraphValidationTest {
 
     private final GraphSchema<LiteralType> schema = ExampleGraphs.buildModernGraphSchema();
 
-    private Maybe<String> validate(TinkerGraph gremlinGraph) {
+    private Maybe<InvalidGraphError<Literal>> validate(TinkerGraph gremlinGraph) {
         Graph<Literal> hydraGraph = HydraGremlinBridge.gremlinToHydra(gremlinGraph,
                 ExampleGraphs::objectToLiteral);
-        return Validation.validateGraph(
-                ExampleGraphs::checkLiteral,
-                ExampleGraphs::showLiteral,
-                schema,
-                hydraGraph);
+        return Pg.validateGraph(ExampleGraphs::checkLiteral, schema, hydraGraph);
     }
 
     // The unmodified Modern graph should validate successfully.
     @Test
     public void testValidGraph() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
-            Maybe<String> result = validate(g);
-            assertValid(result);
+            assertValid(validate(g));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -56,8 +60,7 @@ public class TinkerGraphValidationTest {
     public void testMissingRequiredProperty() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
             g.vertices(1).next().property("name").remove();
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Missing value for");
+            assertInvalid(validate(g), isVertexPropertyError(isMissingValue()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -66,12 +69,9 @@ public class TinkerGraphValidationTest {
     // A vertex with an id type that doesn't match the schema should fail validation.
     @Test
     public void testWrongIdType() {
-        // Use a fresh TinkerGraph that accepts any id type
         try (TinkerGraph g = TinkerGraph.open()) {
-            // Recreate a minimal graph with a string id where int32 is expected
             g.addVertex(T.id, "not-an-int", T.label, "person", "name", "Wrong");
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Invalid id");
+            assertInvalid(validate(g), isVertexIdError());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -90,14 +90,11 @@ public class TinkerGraphValidationTest {
             java.util.Map<Literal, hydra.pg.model.Vertex<Literal>> vertices =
                     new java.util.HashMap<>(hydraGraph.vertices);
             vertices.remove(Literals.int32(2));
-            Graph<Literal> modified = new Graph<>(hydra.util.PersistentMap.fromMap(vertices), hydraGraph.edges);
+            Graph<Literal> modified = new Graph<>(vertices, hydraGraph.edges);
 
-            Maybe<String> result = Validation.validateGraph(
-                    ExampleGraphs::checkLiteral,
-                    ExampleGraphs::showLiteral,
-                    schema,
-                    modified);
-            assertInvalid(result, "does not exist");
+            Maybe<InvalidGraphError<Literal>> result = Pg.validateGraph(
+                    ExampleGraphs::checkLiteral, schema, modified);
+            assertInvalid(result, isEdgeError(isVertexNotFound()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -108,8 +105,7 @@ public class TinkerGraphValidationTest {
     public void testUnexpectedVertexLabel() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
             g.addVertex(T.id, 99, T.label, "robot", "name", "Marvin");
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Unexpected label");
+            assertInvalid(validate(g), isVertexLabelError());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -122,8 +118,7 @@ public class TinkerGraphValidationTest {
             Vertex marko = g.vertices(1).next();
             Vertex josh = g.vertices(4).next();
             marko.addEdge("manages", josh, T.id, 99);
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Unexpected label");
+            assertInvalid(validate(g), isEdgeLabelError());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -135,8 +130,7 @@ public class TinkerGraphValidationTest {
         try (TinkerGraph g = TinkerFactory.createModern()) {
             // Set "name" to an integer instead of a string
             g.vertices(1).next().property("name", 999);
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Invalid value");
+            assertInvalid(validate(g), isVertexPropertyError(isInvalidValue()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -147,8 +141,7 @@ public class TinkerGraphValidationTest {
     public void testUnexpectedPropertyKey() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
             g.vertices(1).next().property("favoriteColor", "blue");
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Unexpected key");
+            assertInvalid(validate(g), isVertexPropertyError(isUnexpectedKey()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -158,13 +151,11 @@ public class TinkerGraphValidationTest {
     @Test
     public void testWrongInVertexLabel() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
-            // Add a "worksAt"-style edge between two persons (should be person -> software for "created")
             Vertex marko = g.vertices(1).next();
             Vertex josh = g.vertices(4).next();
             // "created" expects person -> software, but josh is a person
             marko.addEdge("created", josh, T.id, 99, "weight", 0.5d);
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Wrong in-vertex label");
+            assertInvalid(validate(g), isEdgeError(isWrongInVertexLabel()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -178,8 +169,7 @@ public class TinkerGraphValidationTest {
             Vertex ripple = g.vertices(5).next();
             // "created" expects person -> software, but lop (out-vertex) is software
             lop.addEdge("created", ripple, T.id, 99, "weight", 0.5d);
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Wrong out-vertex label");
+            assertInvalid(validate(g), isEdgeError(isWrongOutVertexLabel()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -193,15 +183,14 @@ public class TinkerGraphValidationTest {
             Vertex lop = g.vertices(3).next();
             // "created" requires "weight", but we omit it
             marko.addEdge("created", lop, T.id, 99);
-            Maybe<String> result = validate(g);
-            assertInvalid(result, "Missing value for");
+            assertInvalid(validate(g), isEdgePropertyError(isMissingValue()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    // A graph with multiple validation issues (unexpected vertex label + missing required edge property).
-    // Hydra's validateGraph returns only the first error encountered.
+    // A graph with multiple validation issues. Hydra's validateGraph returns only the first
+    // error encountered, which (depending on traversal order) could be either of the introduced issues.
     @Test
     public void testMultipleIssuesReportsFirst() {
         try (TinkerGraph g = TinkerFactory.createModern()) {
@@ -212,25 +201,90 @@ public class TinkerGraphValidationTest {
             Vertex lop = g.vertices(3).next();
             marko.addEdge("created", lop, T.id, 98);
 
-            Maybe<String> result = validate(g);
+            Maybe<InvalidGraphError<Literal>> result = validate(g);
             assertTrue(result.isJust(), "Expected validation error but graph was valid");
-            // Only one error is reported, not both
-            String error = result.fromJust();
-            assertTrue(error.contains("Unexpected label") || error.contains("Missing value for"),
-                    "Expected first-encountered error but got: " + error);
+            // The first error reported is one of the two
+            InvalidGraphError<Literal> err = result.fromJust();
+            assertTrue(isVertexLabelError().test(err) || isEdgePropertyError(isMissingValue()).test(err),
+                    "Expected first-encountered error to be vertex-label or edge-property; got: " + err);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void assertValid(Maybe<String> result) {
+    // -- Assertion helpers ----------------------------------------------------
+
+    private static void assertValid(Maybe<InvalidGraphError<Literal>> result) {
         assertFalse(result.isJust(),
                 "Expected valid graph but got: " + (result.isJust() ? result.fromJust() : ""));
     }
 
-    private static void assertInvalid(Maybe<String> result, String expectedSubstring) {
+    private static void assertInvalid(Maybe<InvalidGraphError<Literal>> result,
+                                      Predicate<InvalidGraphError<Literal>> expected) {
         assertTrue(result.isJust(), "Expected validation error but graph was valid");
-        assertTrue(result.fromJust().contains(expectedSubstring),
-                "Expected error containing \"" + expectedSubstring + "\" but got: " + result.fromJust());
+        InvalidGraphError<Literal> err = result.fromJust();
+        assertTrue(expected.test(err),
+                "Validation error did not match expected predicate; got: " + err);
+    }
+
+    // -- Predicate combinators on the typed PG error sums --------------------
+
+    private static Predicate<InvalidGraphError<Literal>> isVertexError(Predicate<InvalidVertexError> inner) {
+        return err -> err instanceof InvalidGraphError.Vertex
+                && inner.test(((InvalidGraphError.Vertex<Literal>) err).value.error);
+    }
+
+    private static Predicate<InvalidGraphError<Literal>> isEdgeError(Predicate<InvalidEdgeError> inner) {
+        return err -> err instanceof InvalidGraphError.Edge
+                && inner.test(((InvalidGraphError.Edge<Literal>) err).value.error);
+    }
+
+    private static Predicate<InvalidGraphError<Literal>> isVertexIdError() {
+        return isVertexError(v -> v instanceof InvalidVertexError.Id);
+    }
+
+    private static Predicate<InvalidGraphError<Literal>> isVertexLabelError() {
+        return isVertexError(v -> v instanceof InvalidVertexError.Label);
+    }
+
+    private static Predicate<InvalidGraphError<Literal>> isVertexPropertyError(
+            Predicate<InvalidPropertyError> inner) {
+        return isVertexError(v -> v instanceof InvalidVertexError.Property
+                && inner.test(((InvalidVertexError.Property) v).value.error));
+    }
+
+    private static Predicate<InvalidGraphError<Literal>> isEdgeLabelError() {
+        return isEdgeError(e -> e instanceof InvalidEdgeError.Label);
+    }
+
+    private static Predicate<InvalidGraphError<Literal>> isEdgePropertyError(
+            Predicate<InvalidPropertyError> inner) {
+        return isEdgeError(e -> e instanceof InvalidEdgeError.Property
+                && inner.test(((InvalidEdgeError.Property) e).value.error));
+    }
+
+    private static Predicate<InvalidEdgeError> isWrongInVertexLabel() {
+        return e -> e instanceof InvalidEdgeError.InVertexLabel;
+    }
+
+    private static Predicate<InvalidEdgeError> isWrongOutVertexLabel() {
+        return e -> e instanceof InvalidEdgeError.OutVertexLabel;
+    }
+
+    private static Predicate<InvalidEdgeError> isVertexNotFound() {
+        return e -> e instanceof InvalidEdgeError.InVertexNotFound
+                || e instanceof InvalidEdgeError.OutVertexNotFound;
+    }
+
+    private static Predicate<InvalidPropertyError> isInvalidValue() {
+        return p -> p instanceof InvalidPropertyError.InvalidValue;
+    }
+
+    private static Predicate<InvalidPropertyError> isMissingValue() {
+        return p -> p instanceof InvalidPropertyError.MissingRequired;
+    }
+
+    private static Predicate<InvalidPropertyError> isUnexpectedKey() {
+        return p -> p instanceof InvalidPropertyError.UnexpectedKey;
     }
 }
