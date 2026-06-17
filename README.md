@@ -25,7 +25,7 @@ HydraPop can validate a property graph against a [GraphSchema](https://central.s
 
 ### Java workflow
 
-1. Define a schema using the Hydra PG DSL (`hydra.pg.dsl`)
+1. Define a schema using Hydra PG model builders
 2. Load or construct a TinkerPop graph
 3. Convert the TinkerPop graph to a Hydra graph via `HydraGremlinBridge.gremlinToHydra`
 4. Validate with `hydra.validate.Pg.validateGraph`
@@ -164,13 +164,16 @@ Now, you can either build your own schema for the Modern graph...
 
 ```groovy
 import hydra.dsl.*
-import hydra.pg.dsl.Graphs
 import hydra.pg.model.*
 
-personType = Graphs.vertexType("person", LiteralTypes.int32()).property("name", LiteralTypes.string(), true).property("age", LiteralTypes.int32(), false).build()
-softwareType = Graphs.vertexType("software", LiteralTypes.int32()).property("name", LiteralTypes.string(), true).property("lang", LiteralTypes.string(), true).build()
-knowsType = Graphs.edgeType("knows", LiteralTypes.int32(), "person", "person").property("weight", LiteralTypes.float64(), true).build()
-createdType = Graphs.edgeType("created", LiteralTypes.int32(), "person", "software").property("weight", LiteralTypes.float64(), true).build()
+propertyType = { key, value, required -> PropertyType.builder().key(new PropertyKey(key)).value(value).required(required).build() }
+person = new VertexLabel("person")
+software = new VertexLabel("software")
+
+personType = VertexType.builder().label(person).id(LiteralTypes.int32()).properties([propertyType("name", LiteralTypes.string(), true), propertyType("age", LiteralTypes.int32(), false)]).build()
+softwareType = VertexType.builder().label(software).id(LiteralTypes.int32()).properties([propertyType("name", LiteralTypes.string(), true), propertyType("lang", LiteralTypes.string(), true)]).build()
+knowsType = EdgeType.builder().label(new EdgeLabel("knows")).id(LiteralTypes.int32()).out(person).in(person).properties([propertyType("weight", LiteralTypes.float64(), true)]).build()
+createdType = EdgeType.builder().label(new EdgeLabel("created")).id(LiteralTypes.int32()).out(person).in(software).properties([propertyType("weight", LiteralTypes.float64(), true)]).build()
 vtypes = [:]; vtypes[personType.label] = personType; vtypes[softwareType.label] = softwareType
 etypes = [:]; etypes[knowsType.label] = knowsType; etypes[createdType.label] = createdType
 schema = new GraphSchema(vtypes, etypes)
@@ -271,13 +274,28 @@ def reset():
 Define the schema for the Modern graph:
 
 ```python
-from hydrapop.dsl.pg import vertex_type, edge_type, graph_schema, int32, string, float64
+import hydra.core as core
+import hydra.pg.model as pg
+from hydra.dsl.python import FrozenDict
 
-person_type = vertex_type("person", int32()).property("name", string(), True).property("age", int32(), False).build()
-software_type = vertex_type("software", int32()).property("name", string(), True).property("lang", string(), True).build()
-knows_type = edge_type("knows", int32(), "person", "person").property("weight", float64(), True).build()
-created_type = edge_type("created", int32(), "person", "software").property("weight", float64(), True).build()
-schema = graph_schema([person_type, software_type], [knows_type, created_type])
+def property_type(key, value, required):
+    return pg.PropertyType.builder().key(pg.PropertyKey(key)).value(value).required(required).build()
+
+int32 = core.LiteralTypeInteger(core.IntegerType.INT32)
+string = core.LiteralTypeString()
+float64 = core.LiteralTypeFloat(core.FloatType.FLOAT64)
+person = pg.VertexLabel("person")
+software = pg.VertexLabel("software")
+
+person_type = pg.VertexType.builder().label(person).id(int32).properties((property_type("name", string, True), property_type("age", int32, False))).build()
+software_type = pg.VertexType.builder().label(software).id(int32).properties((property_type("name", string, True), property_type("lang", string, True))).build()
+knows_type = pg.EdgeType.builder().label(pg.EdgeLabel("knows")).id(int32).out(person).in_(person).properties((property_type("weight", float64, True),)).build()
+created_type = pg.EdgeType.builder().label(pg.EdgeLabel("created")).id(int32).out(person).in_(software).properties((property_type("weight", float64, True),)).build()
+
+schema = pg.GraphSchema.builder() \
+    .vertices(FrozenDict({vt.label: vt for vt in (person_type, software_type)})) \
+    .edges(FrozenDict({et.label: et for et in (knows_type, created_type)})) \
+    .build()
 ```
 
 Validate the unmodified Modern graph (should pass):

@@ -6,7 +6,6 @@ import hydra.core.Literal;
 import hydra.core.LiteralType;
 import hydra.dsl.LiteralTypes;
 import hydra.dsl.Literals;
-import hydra.pg.dsl.Graphs;
 import hydra.Reflect;
 import hydra.util.Optional;
 import hydra.pg.model.Edge;
@@ -14,6 +13,8 @@ import hydra.pg.model.EdgeLabel;
 import hydra.pg.model.EdgeType;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
+import hydra.pg.model.PropertyKey;
+import hydra.pg.model.PropertyType;
 import hydra.pg.model.Vertex;
 import hydra.pg.model.VertexLabel;
 import hydra.pg.model.VertexType;
@@ -35,27 +36,41 @@ public class ExampleGraphs {
     }
 
     /**
-     * Builds a GraphSchema for the TinkerPop "Modern" graph using the Hydra PG DSL.
+     * Builds a GraphSchema for the TinkerPop "Modern" graph.
      *
      * @see <a href="https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/tinkergraph/structure/TinkerFactory.html">TinkerFactory.createModern()</a>
      */
     public static GraphSchema<LiteralType> buildModernGraphSchema() {
-        VertexType<LiteralType> personType = Graphs.<LiteralType>vertexType("person", LiteralTypes.int32())
-                .property("name", LiteralTypes.string(), true)
-                .property("age", LiteralTypes.int32(), false)
+        VertexType<LiteralType> personType = VertexType.<LiteralType>builder()
+                .label(new VertexLabel("person"))
+                .id(LiteralTypes.int32())
+                .properties(Arrays.asList(
+                        propertyType("name", LiteralTypes.string(), true),
+                        propertyType("age", LiteralTypes.int32(), false)))
                 .build();
 
-        VertexType<LiteralType> softwareType = Graphs.<LiteralType>vertexType("software", LiteralTypes.int32())
-                .property("name", LiteralTypes.string(), true)
-                .property("lang", LiteralTypes.string(), true)
+        VertexType<LiteralType> softwareType = VertexType.<LiteralType>builder()
+                .label(new VertexLabel("software"))
+                .id(LiteralTypes.int32())
+                .properties(Arrays.asList(
+                        propertyType("name", LiteralTypes.string(), true),
+                        propertyType("lang", LiteralTypes.string(), true)))
                 .build();
 
-        EdgeType<LiteralType> knowsType = Graphs.<LiteralType>edgeType("knows", LiteralTypes.int32(), "person", "person")
-                .property("weight", LiteralTypes.float64(), true)
+        EdgeType<LiteralType> knowsType = EdgeType.<LiteralType>builder()
+                .label(new EdgeLabel("knows"))
+                .id(LiteralTypes.int32())
+                .out(new VertexLabel("person"))
+                .in(new VertexLabel("person"))
+                .properties(Arrays.asList(propertyType("weight", LiteralTypes.float64(), true)))
                 .build();
 
-        EdgeType<LiteralType> createdType = Graphs.<LiteralType>edgeType("created", LiteralTypes.int32(), "person", "software")
-                .property("weight", LiteralTypes.float64(), true)
+        EdgeType<LiteralType> createdType = EdgeType.<LiteralType>builder()
+                .label(new EdgeLabel("created"))
+                .id(LiteralTypes.int32())
+                .out(new VertexLabel("person"))
+                .in(new VertexLabel("software"))
+                .properties(Arrays.asList(propertyType("weight", LiteralTypes.float64(), true)))
                 .build();
 
         Map<VertexLabel, VertexType<LiteralType>> vertexTypes = new HashMap<>();
@@ -70,7 +85,7 @@ public class ExampleGraphs {
     }
 
     /**
-     * Builds the TinkerPop "Modern" graph using the Hydra PG DSL.
+     * Builds the TinkerPop "Modern" graph.
      *
      * @see <a href="https://tinkerpop.apache.org/javadocs/current/full/org/apache/tinkerpop/gremlin/tinkergraph/structure/TinkerFactory.html">TinkerFactory.createModern()</a>
      */
@@ -82,55 +97,37 @@ public class ExampleGraphs {
         Literal id5 = Literals.int32(5);
         Literal id6 = Literals.int32(6);
 
-        Vertex<Literal> marko = Graphs.<Literal>vertex("person", id1)
-                .property("name", Literals.string("marko"))
-                .property("age", Literals.int32(29))
-                .build();
-        Vertex<Literal> vadas = Graphs.<Literal>vertex("person", id2)
-                .property("name", Literals.string("vadas"))
-                .property("age", Literals.int32(27))
-                .build();
-        Vertex<Literal> lop = Graphs.<Literal>vertex("software", id3)
-                .property("name", Literals.string("lop"))
-                .property("lang", Literals.string("java"))
-                .build();
-        Vertex<Literal> josh = Graphs.<Literal>vertex("person", id4)
-                .property("name", Literals.string("josh"))
-                .property("age", Literals.int32(32))
-                .build();
-        Vertex<Literal> ripple = Graphs.<Literal>vertex("software", id5)
-                .property("name", Literals.string("ripple"))
-                .property("lang", Literals.string("java"))
-                .build();
-        Vertex<Literal> peter = Graphs.<Literal>vertex("person", id6)
-                .property("name", Literals.string("peter"))
-                .property("age", Literals.int32(35))
-                .build();
+        Vertex<Literal> marko = vertex("person", id1, properties(
+                "name", Literals.string("marko"),
+                "age", Literals.int32(29)));
+        Vertex<Literal> vadas = vertex("person", id2, properties(
+                "name", Literals.string("vadas"),
+                "age", Literals.int32(27)));
+        Vertex<Literal> lop = vertex("software", id3, properties(
+                "name", Literals.string("lop"),
+                "lang", Literals.string("java")));
+        Vertex<Literal> josh = vertex("person", id4, properties(
+                "name", Literals.string("josh"),
+                "age", Literals.int32(32)));
+        Vertex<Literal> ripple = vertex("software", id5, properties(
+                "name", Literals.string("ripple"),
+                "lang", Literals.string("java")));
+        Vertex<Literal> peter = vertex("person", id6, properties(
+                "name", Literals.string("peter"),
+                "age", Literals.int32(35)));
 
-        Edge<Literal> knows1 = Graphs.<Literal>edge("knows", Literals.int32(7),
-                        id1, id2)
-                .property("weight", Literals.float64(0.5d))
-                .build();
-        Edge<Literal> knows2 = Graphs.<Literal>edge("knows", Literals.int32(8),
-                        id1, id4)
-                .property("weight", Literals.float64(1.0d))
-                .build();
-        Edge<Literal> created1 = Graphs.<Literal>edge("created", Literals.int32(9),
-                        id1, id3)
-                .property("weight", Literals.float64(0.4d))
-                .build();
-        Edge<Literal> created2 = Graphs.<Literal>edge("created", Literals.int32(10),
-                        id4, id5)
-                .property("weight", Literals.float64(1.0d))
-                .build();
-        Edge<Literal> created3 = Graphs.<Literal>edge("created", Literals.int32(11),
-                        id4, id3)
-                .property("weight", Literals.float64(0.4d))
-                .build();
-        Edge<Literal> created4 = Graphs.<Literal>edge("created", Literals.int32(12),
-                        id6, id3)
-                .property("weight", Literals.float64(0.2d))
-                .build();
+        Edge<Literal> knows1 = edge("knows", Literals.int32(7), id1, id2,
+                properties("weight", Literals.float64(0.5d)));
+        Edge<Literal> knows2 = edge("knows", Literals.int32(8), id1, id4,
+                properties("weight", Literals.float64(1.0d)));
+        Edge<Literal> created1 = edge("created", Literals.int32(9), id1, id3,
+                properties("weight", Literals.float64(0.4d)));
+        Edge<Literal> created2 = edge("created", Literals.int32(10), id4, id5,
+                properties("weight", Literals.float64(1.0d)));
+        Edge<Literal> created3 = edge("created", Literals.int32(11), id4, id3,
+                properties("weight", Literals.float64(0.4d)));
+        Edge<Literal> created4 = edge("created", Literals.int32(12), id6, id3,
+                properties("weight", Literals.float64(0.2d)));
 
         Map<Literal, Vertex<Literal>> vertices = new HashMap<>();
         for (Vertex<Literal> v : Arrays.asList(marko, vadas, lop, josh, ripple, peter)) {
@@ -143,6 +140,45 @@ public class ExampleGraphs {
         }
 
         return new Graph<>(PersistentMap.fromMap(vertices), PersistentMap.fromMap(edges));
+    }
+
+    private static <T> PropertyType<T> propertyType(String key, T value, boolean required) {
+        return PropertyType.<T>builder()
+                .key(new PropertyKey(key))
+                .value(value)
+                .required(required)
+                .build();
+    }
+
+    static Vertex<Literal> vertex(String label, Literal id, Map<PropertyKey, Literal> properties) {
+        return Vertex.<Literal>builder()
+                .label(new VertexLabel(label))
+                .id(id)
+                .properties(PersistentMap.fromMap(properties))
+                .build();
+    }
+
+    static Edge<Literal> edge(
+            String label,
+            Literal id,
+            Literal out,
+            Literal in,
+            Map<PropertyKey, Literal> properties) {
+        return Edge.<Literal>builder()
+                .label(new EdgeLabel(label))
+                .id(id)
+                .out(out)
+                .in(in)
+                .properties(PersistentMap.fromMap(properties))
+                .build();
+    }
+
+    static Map<PropertyKey, Literal> properties(Object... keyValues) {
+        Map<PropertyKey, Literal> properties = new HashMap<>();
+        for (int i = 0; i < keyValues.length; i += 2) {
+            properties.put(new PropertyKey((String) keyValues[i]), (Literal) keyValues[i + 1]);
+        }
+        return properties;
     }
 
     /**

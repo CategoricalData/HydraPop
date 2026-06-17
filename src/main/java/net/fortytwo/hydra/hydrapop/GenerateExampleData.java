@@ -67,17 +67,15 @@ public class GenerateExampleData {
         writeJsonFile(outputDir, "wrong_id_type.json",
                 encodeGraphToJson(buildModifiedGraph((vertices, edges) -> {
                     Literal stringId = hydra.dsl.Literals.string("notAnInt");
-                    vertices.put(stringId, hydra.pg.dsl.Graphs.<Literal>vertex("person", stringId)
-                            .property("name", hydra.dsl.Literals.string("zaphod"))
-                            .build());
+                    vertices.put(stringId, ExampleGraphs.vertex("person", stringId,
+                            ExampleGraphs.properties("name", hydra.dsl.Literals.string("zaphod"))));
                 })));
 
         writeJsonFile(outputDir, "unexpected_vertex_label.json",
                 encodeGraphToJson(buildModifiedGraph((vertices, edges) -> {
                     Literal id = hydra.dsl.Literals.int32(100);
-                    vertices.put(id, hydra.pg.dsl.Graphs.<Literal>vertex("robot", id)
-                            .property("name", hydra.dsl.Literals.string("marvin"))
-                            .build());
+                    vertices.put(id, ExampleGraphs.vertex("robot", id,
+                            ExampleGraphs.properties("name", hydra.dsl.Literals.string("marvin"))));
                 })));
 
         writeJsonFile(outputDir, "unexpected_edge_label.json",
@@ -85,8 +83,8 @@ public class GenerateExampleData {
                     Literal edgeId = hydra.dsl.Literals.int32(100);
                     Literal id1 = hydra.dsl.Literals.int32(1);
                     Literal id2 = hydra.dsl.Literals.int32(2);
-                    edges.put(edgeId, hydra.pg.dsl.Graphs.<Literal>edge("manages", edgeId, id1, id2)
-                            .build());
+                    edges.put(edgeId, ExampleGraphs.edge("manages", edgeId, id1, id2,
+                            ExampleGraphs.properties()));
                 })));
 
         writeJsonFile(outputDir, "property_value_type_mismatch.json",
@@ -112,9 +110,8 @@ public class GenerateExampleData {
                     Literal edgeId = hydra.dsl.Literals.int32(100);
                     Literal id1 = hydra.dsl.Literals.int32(1);
                     Literal id3 = hydra.dsl.Literals.int32(3);
-                    edges.put(edgeId, hydra.pg.dsl.Graphs.<Literal>edge("knows", edgeId, id1, id3)
-                            .property("weight", hydra.dsl.Literals.float64(0.5))
-                            .build());
+                    edges.put(edgeId, ExampleGraphs.edge("knows", edgeId, id1, id3,
+                            ExampleGraphs.properties("weight", hydra.dsl.Literals.float64(0.5))));
                 })));
 
         writeJsonFile(outputDir, "wrong_out_vertex_label.json",
@@ -122,9 +119,8 @@ public class GenerateExampleData {
                     Literal edgeId = hydra.dsl.Literals.int32(100);
                     Literal id3 = hydra.dsl.Literals.int32(3);
                     Literal id5 = hydra.dsl.Literals.int32(5);
-                    edges.put(edgeId, hydra.pg.dsl.Graphs.<Literal>edge("created", edgeId, id3, id5)
-                            .property("weight", hydra.dsl.Literals.float64(0.5))
-                            .build());
+                    edges.put(edgeId, ExampleGraphs.edge("created", edgeId, id3, id5,
+                            ExampleGraphs.properties("weight", hydra.dsl.Literals.float64(0.5))));
                 })));
 
         writeJsonFile(outputDir, "missing_required_edge_property.json",
@@ -132,8 +128,8 @@ public class GenerateExampleData {
                     Literal edgeId = hydra.dsl.Literals.int32(100);
                     Literal id1 = hydra.dsl.Literals.int32(1);
                     Literal id2 = hydra.dsl.Literals.int32(2);
-                    edges.put(edgeId, hydra.pg.dsl.Graphs.<Literal>edge("knows", edgeId, id1, id2)
-                            .build());
+                    edges.put(edgeId, ExampleGraphs.edge("knows", edgeId, id1, id2,
+                            ExampleGraphs.properties()));
                 })));
 
         writeJsonFile(outputDir, "unknown_edge_endpoint.json",
@@ -141,9 +137,8 @@ public class GenerateExampleData {
                     Literal edgeId = hydra.dsl.Literals.int32(100);
                     Literal id1 = hydra.dsl.Literals.int32(1);
                     Literal idMissing = hydra.dsl.Literals.int32(999);
-                    edges.put(edgeId, hydra.pg.dsl.Graphs.<Literal>edge("knows", edgeId, id1, idMissing)
-                            .property("weight", hydra.dsl.Literals.float64(0.5))
-                            .build());
+                    edges.put(edgeId, ExampleGraphs.edge("knows", edgeId, id1, idMissing,
+                            ExampleGraphs.properties("weight", hydra.dsl.Literals.float64(0.5))));
                 })));
 
         System.out.println("Done. Wrote " + 12 + " JSON files.");

@@ -1,7 +1,6 @@
 package net.fortytwo.hydra.hydrapop;
 
 import hydra.core.Literal;
-import hydra.pg.dsl.Graphs;
 import hydra.pg.model.Edge;
 import hydra.pg.model.Graph;
 import hydra.pg.model.PropertyKey;
@@ -193,10 +192,10 @@ public class HydraGremlinBridgeTest {
         Graph<Literal> handBuilt = ExampleGraphs.buildModernGraph();
 
         // Add an extra vertex
-        Vertex<Literal> zaphod = Graphs.<Literal>vertex("person", hydra.dsl.Literals.int32(99))
-                .property("name", hydra.dsl.Literals.string("zaphod"))
-                .property("age", hydra.dsl.Literals.int32(250))
-                .build();
+        Vertex<Literal> zaphod = ExampleGraphs.vertex("person", hydra.dsl.Literals.int32(99),
+                ExampleGraphs.properties(
+                        "name", hydra.dsl.Literals.string("zaphod"),
+                        "age", hydra.dsl.Literals.int32(250)));
         java.util.Map<Literal, Vertex<Literal>> moreVertices = new java.util.HashMap<>(handBuilt.vertices);
         moreVertices.put(zaphod.id, zaphod);
         Graph<Literal> modified = new Graph<>(moreVertices, handBuilt.edges);

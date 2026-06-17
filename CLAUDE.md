@@ -23,7 +23,6 @@ HydraPop/
         GenerateExampleData.java    # Encodes Java data as JSON for Python
       python/hydrapop/
         decode.py                   # JSON -> Hydra PG model decoders
-        dsl/pg.py                   # Python PG DSL (vertex_type, edge_type, etc.)
         gremlin_bridge.py           # gremlinpython -> Hydra PG model conversion
         validate.py                 # check_literal / show_literal / validate()
     test/
@@ -56,22 +55,8 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
 
 - **`ExampleGraphs`** -- Source of truth for all example data. Builds the
   TinkerPop Modern graph schema (`GraphSchema<LiteralType>`) and graph
-  (`Graph<Literal>`) using Hydra's PG DSL. Also provides `literalToObject`,
+  (`Graph<Literal>`) using Hydra's generated PG model builders. Also provides `literalToObject`,
   `objectToLiteral`, `checkLiteral`, and `showLiteral` helpers.
-
-- **`hydra/pg/dsl/`** -- Vendored copy of the fluent, value-level PG DSL
-  helpers (`Graphs`, `Queries`, and the `*Builder` classes) from
-  packages/hydra-java/src/main/java/hydra/pg/dsl/ in the Hydra source tree.
-  These return plain model POJOs (`VertexType<T>`, `Edge<V>`,
-  `GraphSchema<T>`) via a fluent `.property(...).build()` chain.
-
-  As of Hydra 0.16.1 these are still not published in any Maven artifact.
-  `hydra-pg:0.16.1` does ship a `hydra.dsl.pg.Model` DSL, but that is a
-  *term-level* DSL (every method takes and returns `TypedTerm<...>` wrappers,
-  for building Hydra terms / code generation) -- not a drop-in replacement
-  for the value-level builders this project uses. No separate `hydra-pg-dsl`
-  artifact exists. Keep this vendored copy until Hydra publishes equivalent
-  value-level builders.
 
 - **`HydraGremlinBridge`** -- Bidirectional conversion between Hydra and
   TinkerPop property graphs. Generic over the value type.
@@ -89,10 +74,6 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
 - **`hydrapop.decode`** -- Decodes JSON into `hydra.pg.model` objects
   (`GraphSchema`, `Graph`, `Vertex`, `Edge`, `Literal`, etc.). Adapted from
   the Hydra validatepg demo.
-
-- **`hydrapop.dsl.pg`** -- Python DSL for building Hydra PG schemas. Mirrors
-  the Java `hydra.pg.dsl.Graphs` builder API with `vertex_type()`,
-  `edge_type()`, `graph_schema()`, and literal type shortcuts.
 
 - **`hydrapop.validate`** -- Provides the `check_literal` callback for
   `hydra.validate.pg.validate_graph` (typed `InvalidValueError` in 0.15+),
@@ -155,7 +136,7 @@ used by `hydrapop.gremlin_bridge` to connect to a Gremlin Server.
 
 Java is the source of truth for example data. The interchange flow is:
 
-1. `ExampleGraphs` (Java) defines schemas and graphs using Hydra's PG DSL
+1. `ExampleGraphs` (Java) defines schemas and graphs using Hydra's generated PG model builders
 2. `GenerateExampleData` (Java) encodes them as Hydra Terms, serializes to JSON
 3. `hydrapop.decode` (Python) loads the JSON, decodes into `hydra.pg.model` objects
 4. Both Java and Python tests validate the same data using the same Hydra
