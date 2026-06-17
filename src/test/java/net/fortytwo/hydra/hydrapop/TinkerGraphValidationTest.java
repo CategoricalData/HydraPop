@@ -12,8 +12,9 @@ import hydra.error.pg.InvalidPropertyError;
 import hydra.error.pg.InvalidVertexError;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
-import hydra.util.Maybe;
+import hydra.util.Optional;
 import hydra.validate.Pg;
+import hydra.validation.ValidationResult;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -21,6 +22,7 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,10 +41,21 @@ public class TinkerGraphValidationTest {
 
     private final GraphSchema<LiteralType> schema = ExampleGraphs.buildModernGraphSchema();
 
-    private Maybe<InvalidGraphError<Literal>> validate(TinkerGraph gremlinGraph) {
+    private Optional<InvalidGraphError<Literal>> validate(TinkerGraph gremlinGraph) {
         Graph<Literal> hydraGraph = HydraGremlinBridge.gremlinToHydra(gremlinGraph,
                 ExampleGraphs::objectToLiteral);
-        return Pg.validateGraph(ExampleGraphs::checkLiteral, schema, hydraGraph);
+        return validate(hydraGraph);
+    }
+
+    // Runs validation and collapses the ValidationResult to its first error (if any).
+    private Optional<InvalidGraphError<Literal>> validate(Graph<Literal> hydraGraph) {
+        ValidationResult<InvalidGraphError<Literal>> result = Pg.validateGraph(
+                Pg.defaultPgProfile(),
+                new ValidationResult<>(List.of(), List.of()),
+                ExampleGraphs::checkLiteral, schema, hydraGraph);
+        return result.errors.isEmpty()
+                ? Optional.none()
+                : Optional.given(result.errors.get(0));
     }
 
     // The unmodified Modern graph should validate successfully.
@@ -92,9 +105,7 @@ public class TinkerGraphValidationTest {
             vertices.remove(Literals.int32(2));
             Graph<Literal> modified = new Graph<>(vertices, hydraGraph.edges);
 
-            Maybe<InvalidGraphError<Literal>> result = Pg.validateGraph(
-                    ExampleGraphs::checkLiteral, schema, modified);
-            assertInvalid(result, isEdgeError(isVertexNotFound()));
+            assertInvalid(validate(modified), isEdgeError(isVertexNotFound()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -201,10 +212,10 @@ public class TinkerGraphValidationTest {
             Vertex lop = g.vertices(3).next();
             marko.addEdge("created", lop, T.id, 98);
 
-            Maybe<InvalidGraphError<Literal>> result = validate(g);
-            assertTrue(result.isJust(), "Expected validation error but graph was valid");
+            Optional<InvalidGraphError<Literal>> result = validate(g);
+            assertTrue(result.isGiven(), "Expected validation error but graph was valid");
             // The first error reported is one of the two
-            InvalidGraphError<Literal> err = result.fromJust();
+            InvalidGraphError<Literal> err = result.fromGiven();
             assertTrue(isVertexLabelError().test(err) || isEdgePropertyError(isMissingValue()).test(err),
                     "Expected first-encountered error to be vertex-label or edge-property; got: " + err);
         } catch (Exception e) {
@@ -214,15 +225,15 @@ public class TinkerGraphValidationTest {
 
     // -- Assertion helpers ----------------------------------------------------
 
-    private static void assertValid(Maybe<InvalidGraphError<Literal>> result) {
-        assertFalse(result.isJust(),
-                "Expected valid graph but got: " + (result.isJust() ? result.fromJust() : ""));
+    private static void assertValid(Optional<InvalidGraphError<Literal>> result) {
+        assertFalse(result.isGiven(),
+                "Expected valid graph but got: " + (result.isGiven() ? result.fromGiven() : ""));
     }
 
-    private static void assertInvalid(Maybe<InvalidGraphError<Literal>> result,
+    private static void assertInvalid(Optional<InvalidGraphError<Literal>> result,
                                       Predicate<InvalidGraphError<Literal>> expected) {
-        assertTrue(result.isJust(), "Expected validation error but graph was valid");
-        InvalidGraphError<Literal> err = result.fromJust();
+        assertTrue(result.isGiven(), "Expected validation error but graph was valid");
+        InvalidGraphError<Literal> err = result.fromGiven();
         assertTrue(expected.test(err),
                 "Validation error did not match expected predicate; got: " + err);
     }

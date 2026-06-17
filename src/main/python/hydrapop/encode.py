@@ -2,7 +2,7 @@
 
 Inverse of ``hydrapop.decode``: encodes ``hydra.pg.model`` objects into
 the canonical Hydra term-JSON format. Maps are encoded as keyed lists
-with ``@key`` / ``@value`` entries, matching the JSON produced by Java's
+with ``key`` / ``value`` entries, matching the JSON produced by Java's
 ``hydra.encode.pg.model`` plus ``hydra.json.encode.Encode``.
 
 Useful when authoring schemas or graphs in Python (rather than Java) and
@@ -15,9 +15,9 @@ import hydra.core
 # -- Helpers --
 
 def _encode_map(mapping, encode_key, encode_value):
-    """Encode a FrozenDict (or dict) as a list of @key/@value entries."""
+    """Encode a FrozenDict (or dict) as a list of key/value entries."""
     return [
-        {"@key": encode_key(k), "@value": encode_value(v)}
+        {"key": encode_key(k), "value": encode_value(v)}
         for k, v in mapping.items()
     ]
 
@@ -43,7 +43,6 @@ def encode_literal_type(literal_type):
 
 
 _FLOAT_TYPE_TAGS = {
-    hydra.core.FloatType.BIGFLOAT: "bigfloat",
     hydra.core.FloatType.FLOAT32: "float32",
     hydra.core.FloatType.FLOAT64: "float64",
 }
@@ -93,10 +92,6 @@ def encode_literal(literal):
 
 
 def _encode_float_value(fv):
-    if isinstance(fv, hydra.core.FloatValueBigfloat):
-        # JSON has no Decimal; emit as a string for lossless round-trip with
-        # ``decode._decode_float_value`` (which does Decimal(str(value))).
-        return {"bigfloat": str(fv.value)}
     if isinstance(fv, hydra.core.FloatValueFloat32):
         return {"float32": fv.value}
     if isinstance(fv, hydra.core.FloatValueFloat64):

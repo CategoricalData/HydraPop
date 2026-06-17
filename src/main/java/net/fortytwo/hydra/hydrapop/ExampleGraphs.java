@@ -8,7 +8,7 @@ import hydra.dsl.LiteralTypes;
 import hydra.dsl.Literals;
 import hydra.pg.dsl.Graphs;
 import hydra.Reflect;
-import hydra.util.Maybe;
+import hydra.util.Optional;
 import hydra.pg.model.Edge;
 import hydra.pg.model.EdgeLabel;
 import hydra.pg.model.EdgeType;
@@ -192,7 +192,7 @@ public class ExampleGraphs {
     /**
      * Checks whether a Literal value matches a LiteralType.
      */
-    static java.util.function.Function<Literal, Maybe<hydra.error.pg.InvalidValueError>> checkLiteral(LiteralType type) {
+    static java.util.function.Function<Literal, Optional<hydra.error.pg.InvalidValueError>> checkLiteral(LiteralType type) {
         return HydraGremlinBridge.checkLiteral(type);
     }
 

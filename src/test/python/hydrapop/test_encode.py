@@ -25,10 +25,10 @@ def _load(name):
 
 
 def _sort_top(doc, key_to_str):
-    """Sort vertices and edges by @key for stable comparison."""
+    """Sort vertices and edges by key for stable comparison."""
     return {
-        "vertices": sorted(doc["vertices"], key=lambda e: key_to_str(e["@key"])),
-        "edges": sorted(doc["edges"], key=lambda e: key_to_str(e["@key"])),
+        "vertices": sorted(doc["vertices"], key=lambda e: key_to_str(e["key"])),
+        "edges": sorted(doc["edges"], key=lambda e: key_to_str(e["key"])),
     }
 
 

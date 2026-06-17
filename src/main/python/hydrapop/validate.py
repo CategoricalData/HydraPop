@@ -4,17 +4,19 @@ Provides the ``check_value`` callback required by ``hydra.validate.pg.validate_g
 plus a high-level ``validate(schema, g)`` convenience wrapper.
 
 Hydra 0.15+ uses typed errors (``hydra.error.pg.InvalidGraphError``) rather than
-the bare ``Maybe[str]`` result of 0.14; the ``Result`` class here preserves the
-typed value for programmatic inspection while still providing a printable form.
+the bare ``Maybe[str]`` result of 0.14. As of 0.16, ``validate_graph`` takes a
+``ValidationProfile`` and a ``ValidationResult`` accumulator and returns a
+``ValidationResult`` collecting every finding; this wrapper collapses that to
+first-error semantics. The ``Result`` class preserves the typed value for
+programmatic inspection while still providing a printable form.
 """
 
 import hydra.core
 import hydra.error.pg
-from hydra.dsl.python import Just, Nothing
+from hydra.dsl.python import Given, None_
 
 
 _FLOAT_TYPE_NAMES = {
-    hydra.core.FloatType.BIGFLOAT: "bigfloat",
     hydra.core.FloatType.FLOAT32: "float32",
     hydra.core.FloatType.FLOAT64: "float64",
 }
@@ -32,7 +34,6 @@ _INTEGER_TYPE_NAMES = {
 }
 
 _FLOAT_VALUE_FAMILY = {
-    hydra.core.FloatValueBigfloat: "float:bigfloat",
     hydra.core.FloatValueFloat32: "float:float32",
     hydra.core.FloatValueFloat64: "float:float64",
 }
@@ -99,14 +100,14 @@ def show_literal(lit):
 def check_literal(lt, lv):
     """Check that a Literal value matches an expected LiteralType.
 
-    Returns ``Nothing()`` if the types match, ``Just(InvalidValueError(...))``
+    Returns ``None_()`` if the types match, ``Given(InvalidValueError(...))``
     otherwise. This is the ``check_value`` callback for ``hydra.validate.pg.validate_graph``.
     """
     expected = show_literal_type(lt)
     actual = literal_family(lv)
     if expected == actual:
-        return Nothing()
-    return Just(hydra.error.pg.InvalidValueError(expected, show_literal(lv)))
+        return None_()
+    return Given(hydra.error.pg.InvalidValueError(expected, show_literal(lv)))
 
 
 class Result:
@@ -148,12 +149,18 @@ def validate(schema, g):
         ``error`` attribute, when present, is a typed ``InvalidGraphError``.
     """
     import hydra.validate.pg as pg_validation
+    import hydra.validation
     from hydrapop.gremlin_bridge import gremlin_to_hydra
 
     hydra_graph = gremlin_to_hydra(g)
-    result = pg_validation.validate_graph(check_literal, schema, hydra_graph)
-    match result:
-        case Just(err):
-            return Result(err)
-        case _:
-            return Result(None)
+    # 0.16+: validate_graph takes a ValidationProfile and a ValidationResult
+    # accumulator, returning a ValidationResult whose ``errors`` collects every
+    # finding. Collapse to first-error semantics to match Result.
+    result = pg_validation.validate_graph(
+        pg_validation.default_pg_profile(),
+        hydra.validation.ValidationResult(errors=[], warnings=[]),
+        check_literal,
+        schema,
+        hydra_graph,
+    )
+    return Result(result.errors[0] if result.errors else None)

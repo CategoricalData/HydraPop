@@ -1,7 +1,9 @@
 """JSON decoders for Hydra property graph types.
 
 Decodes JSON produced by Java's Hydra term encoders into Python
-hydra.pg.model objects. The JSON format matches the validatepg demo.
+hydra.pg.model objects. As of Hydra 0.16, map terms are encoded as a list
+of ``{"key": ..., "value": ...}`` objects (the 0.15 ``@key``/``@value`` form
+was dropped); see ``_decode_map``.
 """
 
 import json
@@ -31,8 +33,8 @@ def _decode_map(json_val, decode_key, decode_value):
     result = {}
     for entry in entries:
         obj = _expect_obj(entry)
-        k = decode_key(obj["@key"])
-        v = decode_value(obj["@value"])
+        k = decode_key(obj["key"])
+        v = decode_value(obj["value"])
         result[k] = v
     return FrozenDict(result)
 
@@ -60,8 +62,6 @@ def decode_literal_type(json_val):
 
 def _decode_float_type(json_val):
     obj = _expect_obj(json_val)
-    if "bigfloat" in obj:
-        return hydra.core.FloatType.BIGFLOAT
     if "float32" in obj:
         return hydra.core.FloatType.FLOAT32
     if "float64" in obj:
@@ -110,11 +110,7 @@ def decode_literal(json_val):
 
 
 def _decode_float_value(json_val):
-    from decimal import Decimal
-
     obj = _expect_obj(json_val)
-    if "bigfloat" in obj:
-        return hydra.core.FloatValueBigfloat(Decimal(str(obj["bigfloat"])))
     if "float32" in obj:
         return hydra.core.FloatValueFloat32(float(obj["float32"]))
     if "float64" in obj:

@@ -10,7 +10,8 @@ the assertions below pattern-match on the typed variants.
 
 import hydra.error.pg as err
 import hydra.validate.pg as pg_validation
-from hydra.dsl.python import Just, Nothing
+import hydra.validation
+from hydra.dsl.python import Given, None_
 
 from hydrapop.decode import load_graph, load_schema
 from hydrapop.validate import check_literal
@@ -20,22 +21,32 @@ schema = load_schema()
 
 
 def validate(graph):
-    return pg_validation.validate_graph(check_literal, schema, graph)
+    # 0.16+: validate_graph takes a ValidationProfile and a ValidationResult
+    # accumulator. Collapse the resulting errors list to first-error Given/None_
+    # so the assertion helpers below stay unchanged.
+    result = pg_validation.validate_graph(
+        pg_validation.default_pg_profile(),
+        hydra.validation.ValidationResult(errors=[], warnings=[]),
+        check_literal,
+        schema,
+        graph,
+    )
+    return Given(result.errors[0]) if result.errors else None_()
 
 
 def assert_valid(result):
     match result:
-        case Nothing():
+        case None_():
             pass
-        case Just(e):
+        case Given(e):
             raise AssertionError(f"Expected valid graph but got: {e}")
 
 
 def assert_invalid(result, predicate, description):
     match result:
-        case Nothing():
+        case None_():
             raise AssertionError("Expected validation error but graph was valid")
-        case Just(e):
+        case Given(e):
             assert predicate(e), (
                 f"Validation error did not match {description}; got: {e}"
             )

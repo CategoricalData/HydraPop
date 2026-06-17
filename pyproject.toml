@@ -6,42 +6,24 @@ readme = "README.md"
 authors = []
 requires-python = ">=3.12"
 license = "Apache-2.0"
-dependencies = []
+dependencies = [
+    "gremlinpython>=3.8.0",
+    "hydra-kernel>=0.16.1",
+    "hydra-pg>=0.16.1",
+]
 
-[dependency-groups]
+[project.optional-dependencies]
 test = ["pytest>=8.3.4"]
 lint = ["ruff>=0.8.4"]
 check = ["pyright>=1.1.391"]
 notebook = ["ipykernel>=6.29", "nest-asyncio>=1.6"]
-
-[tool.pixi.workspace]
-channels = ["conda-forge"]
-platforms = ["osx-64", "osx-arm64", "linux-64"]
-
-[tool.pixi.dependencies]
-hydra-kernel = ">=0.15.0"
-hydra-pg = ">=0.15.0"
-
-[tool.pixi.pypi-dependencies]
-hydrapop = { path = ".", editable = true }
-gremlinpython = ">=3.8.0"
-
-[tool.pixi.feature.test.tasks]
-test = "pytest"
-console = { cmd = "python", env = { PYTHONPATH = "src/main/python" } }
-
-[tool.pixi.feature.lint.tasks]
-lint = "ruff check"
-format = "ruff format"
-
-[tool.pixi.feature.check.tasks]
-check = "pyright"
-
-[tool.pixi.feature.notebook.tasks]
-register-kernel = "python -m ipykernel install --user --name hydrapop --display-name 'HydraPop'"
-
-[tool.pixi.environments]
-default = { features = ["test", "lint", "check", "notebook"] }
+dev = [
+    "pytest>=8.3.4",
+    "ruff>=0.8.4",
+    "pyright>=1.1.391",
+    "ipykernel>=6.29",
+    "nest-asyncio>=1.6",
+]
 
 [tool.ruff]
 line-length = 88

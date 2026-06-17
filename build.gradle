@@ -11,7 +11,7 @@ repositories {
 
 dependencies {
     // hydra-pg pulls in hydra-kernel transitively
-    api 'net.fortytwo.hydra:hydra-pg:0.15.0'
+    api 'net.fortytwo.hydra:hydra-pg:0.16.1'
     api 'org.apache.tinkerpop:gremlin-core:3.8.0'
 
     testImplementation platform('org.junit:junit-bom:5.9.2')

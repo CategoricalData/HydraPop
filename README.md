@@ -71,22 +71,22 @@ Clone this repository, then run the following commands from the project root.
 ./gradlew consoleLibs
 ```
 
-Requires: **Java 11+**, Gradle 8.12.1 (wrapper included)
+Requires: **Java 17+**, Gradle 8.12.1 (wrapper included)
 
 ### Python
 
 ```bash
-# Install pixi (if not already installed)
-curl -fsSL https://pixi.sh/install.sh | bash
+# Install runtime dependencies from PyPI
+python -m pip install -e .
 
-# Install dependencies (pulls hydra-kernel + hydra-pg from conda-forge)
-pixi install
+# Install test dependencies
+python -m pip install -e '.[test]'
 
 # Run tests
-pixi run test
+python -m pytest
 ```
 
-Requires: [pixi](https://pixi.sh/), Python 3.12+
+Requires: Python 3.12+
 
 ## Gremlin example
 
@@ -227,14 +227,15 @@ Validate.validate(schema, g)
 Install dependencies (includes gremlinpython and hydra-kernel + hydra-pg):
 
 ```bash
-pixi install
+python -m pip install -e .
 ```
 
 To run the [Jupyter notebook](notebooks/validation.ipynb) instead of the REPL session below:
 
 ```bash
-pixi run register-kernel
-pixi run jupyter lab
+python -m pip install -e '.[notebook]'
+python -m ipykernel install --user --name hydrapop --display-name 'HydraPop'
+jupyter lab
 ```
 
 Then select the **HydraPop** kernel when opening the notebook.
@@ -244,7 +245,7 @@ Then select the **HydraPop** kernel when opening the notebook.
 Start a Python REPL with the project dependencies:
 
 ```bash
-pixi run console
+python
 ```
 
 Connect to Gremlin Server. As with the Java session, we define a `reset()`

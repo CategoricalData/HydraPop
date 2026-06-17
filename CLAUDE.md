@@ -36,7 +36,7 @@ HydraPop/
       json/                         # Generated: schema + graph JSON files
   build.gradle                      # Java build (Gradle)
   settings.gradle                   # Gradle settings (project name only)
-  pyproject.toml                    # Python build (pixi + hatchling + pytest)
+  pyproject.toml                    # Python build (pip + hatchling + pytest)
 ```
 
 ### Generated vs hand-written
@@ -59,14 +59,19 @@ encodes the Java-defined schema and graphs as Hydra Terms and serializes them to
   (`Graph<Literal>`) using Hydra's PG DSL. Also provides `literalToObject`,
   `objectToLiteral`, `checkLiteral`, and `showLiteral` helpers.
 
-- **`hydra/pg/dsl/`** -- Vendored copy of the fluent PG DSL helpers
-  (`Graphs`, `Queries`, and the `*Builder` classes) from
-  packages/hydra-java/src/main/java/hydra/pg/dsl/ in the Hydra 0.15.0 source
-  tree. The Hydra 0.15 release did not publish these classes in any Maven
-  artifact (`hydra-java:0.15.0` ships only the Java coder; `hydra-pg:0.15.0`
-  ships the model + validation but not the hand-written DSL helpers).
-  When Hydra publishes `hydra-pg-dsl` separately (planned for 0.16), this
-  vendored copy can be removed in favor of that dependency.
+- **`hydra/pg/dsl/`** -- Vendored copy of the fluent, value-level PG DSL
+  helpers (`Graphs`, `Queries`, and the `*Builder` classes) from
+  packages/hydra-java/src/main/java/hydra/pg/dsl/ in the Hydra source tree.
+  These return plain model POJOs (`VertexType<T>`, `Edge<V>`,
+  `GraphSchema<T>`) via a fluent `.property(...).build()` chain.
+
+  As of Hydra 0.16.1 these are still not published in any Maven artifact.
+  `hydra-pg:0.16.1` does ship a `hydra.dsl.pg.Model` DSL, but that is a
+  *term-level* DSL (every method takes and returns `TypedTerm<...>` wrappers,
+  for building Hydra terms / code generation) -- not a drop-in replacement
+  for the value-level builders this project uses. No separate `hydra-pg-dsl`
+  artifact exists. Keep this vendored copy until Hydra publishes equivalent
+  value-level builders.
 
 - **`HydraGremlinBridge`** -- Bidirectional conversion between Hydra and
   TinkerPop property graphs. Generic over the value type.
@@ -117,12 +122,13 @@ Requires: **Java 17+**, Gradle 8.12.1 (wrapper included)
 ### Python
 
 ```bash
-pixi install                       # Install dependencies
-pixi run test                      # Run pytest
-pixi run lint                      # Run ruff
+python -m pip install -e '.[test]' # Install runtime + test dependencies
+python -m pytest                   # Run pytest
+python -m pip install -e '.[lint]' # Install lint dependencies
+python -m ruff check               # Run ruff
 ```
 
-Requires: [pixi](https://pixi.sh/), Python 3.12+
+Requires: Python 3.12+
 
 ## Dependencies
 
@@ -130,19 +136,20 @@ Requires: [pixi](https://pixi.sh/), Python 3.12+
 
 | Dependency | Version | Scope |
 |------------|---------|-------|
-| hydra-java | 0.15.0  | api |
+| hydra-pg | 0.16.1  | api (pulls in hydra-java + hydra-kernel transitively) |
 | gremlin-core | 3.8.0 | api |
 | tinkergraph-gremlin | 3.8.0 | test |
 | JUnit 5 | 5.9.2 | test |
 
 ### Python
 
-The conda-forge packages `hydra-kernel` and `hydra-pg` (split out from the
-0.14 rolled-up `hydra-python` in Hydra 0.15) provide core Hydra types and
-the PG model + validation modules (`hydra.pg.model`, `hydra.validate.pg`).
+The `hydra-kernel` and `hydra-pg` packages (split out from the 0.14 rolled-up
+`hydra-python` in Hydra 0.15) provide core Hydra types and the PG model +
+validation modules (`hydra.pg.model`, `hydra.validate.pg`). HydraPop installs
+them from PyPI through standard project dependencies in `pyproject.toml`.
 
-The `gremlinpython` conda package (>= 3.8.0) provides the Python Gremlin
-driver, used by `hydrapop.gremlin_bridge` to connect to a Gremlin Server.
+The `gremlinpython` package (>= 3.8.0) provides the Python Gremlin driver,
+used by `hydrapop.gremlin_bridge` to connect to a Gremlin Server.
 
 ## Translingual data interchange
 

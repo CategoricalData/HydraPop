@@ -12,7 +12,7 @@ import hydra.pg.model.PropertyKey;
 import hydra.pg.model.Vertex;
 import hydra.pg.model.VertexLabel;
 import hydra.Reflect;
-import hydra.util.Maybe;
+import hydra.util.Optional;
 import hydra.util.PersistentMap;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -200,19 +200,19 @@ public class HydraGremlinBridge {
 
     /**
      * Checks whether a Literal value matches a LiteralType.
-     * Returns a function that, given a Literal, returns Nothing if the type matches
-     * or Just(InvalidValueError) if it does not.
+     * Returns a function that, given a Literal, returns Optional.none() if the type matches
+     * or Optional.given(InvalidValueError) if it does not.
      *
      * <p>This is the {@code checkValue} callback for {@link hydra.validate.Pg#validateGraph}
      * when property values are Literals.
      */
-    public static Function<Literal, Maybe<InvalidValueError>> checkLiteral(LiteralType type) {
+    public static Function<Literal, Optional<InvalidValueError>> checkLiteral(LiteralType type) {
         return value -> {
             LiteralType actual = Reflect.literalType(value);
             if (type.equals(actual)) {
-                return Maybe.nothing();
+                return Optional.none();
             }
-            return Maybe.just(new InvalidValueError(
+            return Optional.given(new InvalidValueError(
                     LiteralTypes.showLiteralType(type),
                     Literals.showLiteral(value)));
         };

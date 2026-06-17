@@ -5,10 +5,13 @@ import hydra.core.LiteralType;
 import hydra.error.pg.InvalidGraphError;
 import hydra.pg.model.Graph;
 import hydra.pg.model.GraphSchema;
-import hydra.util.Maybe;
+import hydra.util.Optional;
 import hydra.validate.Pg;
+import hydra.validation.ValidationResult;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+
+import java.util.List;
 
 /**
  * Convenience methods for validating TinkerPop graphs against a Hydra GraphSchema.
@@ -25,26 +28,45 @@ public class Validate {
      * the result retains the typed value alongside a human-readable rendering.
      */
     public static class Result {
-        private final Maybe<InvalidGraphError<Literal>> error;
+        private final Optional<InvalidGraphError<Literal>> error;
 
-        private Result(Maybe<InvalidGraphError<Literal>> error) {
+        private Result(Optional<InvalidGraphError<Literal>> error) {
             this.error = error;
         }
 
         /** Returns true if the graph is valid. */
         public boolean isValid() {
-            return !error.isJust();
+            return !error.isGiven();
         }
 
-        /** Returns the typed error, or {@link Maybe#nothing()} if valid. */
-        public Maybe<InvalidGraphError<Literal>> getError() {
+        /** Returns the first typed error, or {@link Optional#none()} if valid. */
+        public Optional<InvalidGraphError<Literal>> getError() {
             return error;
         }
 
         @Override
         public String toString() {
-            return error.isJust() ? "INVALID - " + error.fromJust() : "VALID";
+            return error.isGiven() ? "INVALID - " + error.fromGiven() : "VALID";
         }
+    }
+
+    /**
+     * Runs Hydra's PG validation and reduces the result to the first error, if any.
+     *
+     * <p>In 0.16+, {@link Pg#validateGraph} returns a {@link ValidationResult} accumulating
+     * all findings; this collapses it to first-error semantics to match {@link Result}.
+     */
+    private static Optional<InvalidGraphError<Literal>> firstError(
+            GraphSchema<LiteralType> schema, Graph<Literal> hydraGraph) {
+        ValidationResult<InvalidGraphError<Literal>> result = Pg.validateGraph(
+                Pg.defaultPgProfile(),
+                new ValidationResult<>(List.of(), List.of()),
+                HydraGremlinBridge::checkLiteral,
+                schema,
+                hydraGraph);
+        return result.errors.isEmpty()
+                ? Optional.none()
+                : Optional.given(result.errors.get(0));
     }
 
     /**
@@ -64,11 +86,7 @@ public class Validate {
             org.apache.tinkerpop.gremlin.structure.Graph gremlinGraph) {
         Graph<Literal> hydraGraph = HydraGremlinBridge.gremlinToHydra(
                 gremlinGraph, HydraGremlinBridge::objectToLiteral);
-        Maybe<InvalidGraphError<Literal>> result = Pg.validateGraph(
-                HydraGremlinBridge::checkLiteral,
-                schema,
-                hydraGraph);
-        return new Result(result);
+        return new Result(firstError(schema, hydraGraph));
     }
 
     /**
@@ -84,10 +102,6 @@ public class Validate {
             GraphTraversalSource g) {
         Graph<Literal> hydraGraph = HydraGremlinBridge.gremlinToHydra(
                 g, HydraGremlinBridge::objectToLiteral);
-        Maybe<InvalidGraphError<Literal>> result = Pg.validateGraph(
-                HydraGremlinBridge::checkLiteral,
-                schema,
-                hydraGraph);
-        return new Result(result);
+        return new Result(firstError(schema, hydraGraph));
     }
 }
